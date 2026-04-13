@@ -423,7 +423,7 @@ def format_signaling_graph(
             color = gr_color
             ntype = "target"
         else:
-            color = "grey50"
+            color = "#7F7F7F"
             ntype = "mediator"
         node_records.append({
             "id": idx,

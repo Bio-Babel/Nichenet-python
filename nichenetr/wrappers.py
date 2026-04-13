@@ -27,6 +27,10 @@ from .targets import (
     prepare_ligand_receptor_visualization,
 )
 from .datasets import load_lr_network, load_ligand_target_matrix, load_weighted_networks
+from .visualization import (
+    make_heatmap_ggplot,
+    make_threecolor_heatmap_ggplot,
+)
 
 __all__ = [
     "nichenet_seuratobj_aggregate",
@@ -242,6 +246,211 @@ def _build_lr_receptor_matrix(
 
     vis_mat = pivot.loc[order_receptors, order_ligands].values
     return vis_mat, order_receptors, order_ligands
+
+
+def _generate_figures(
+    vis_ligand_target: Optional[pd.DataFrame],
+    vis_lr_network: Optional[np.ndarray],
+    order_receptors: list[str],
+    order_ligands_receptor: list[str],
+    lig_activities: pd.DataFrame,
+    best_upstream_ligands: list[str],
+    lfc_matrix: Optional[pd.DataFrame],
+    adata: ad.AnnData,
+    celltype_col: str,
+    sender_celltypes: list[str],
+    condition_col: str,
+    condition_oi: str,
+    assay_oi: Optional[str],
+) -> Dict[str, Any]:
+    """Generate all visualization figures for the NicheNet output.
+
+    Returns a dict with keys: ``ligand_target_heatmap``,
+    ``ligand_receptor_heatmap``, ``ligand_expression_dotplot``,
+    ``ligand_differential_expression_heatmap``,
+    ``ligand_activity_target_heatmap``.
+    """
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as plt
+
+    # --- 1. Ligand-target heatmap ---
+    ligand_target_heatmap = None
+    if vis_ligand_target is not None and vis_ligand_target.shape[0] > 0:
+        ligand_target_heatmap = make_heatmap_ggplot(
+            vis_ligand_target,
+            y_name="Prioritized ligands",
+            x_name="Predicted target genes",
+            color="purple",
+            legend_position="top",
+            x_axis_position="top",
+            legend_title="Regulatory potential",
+            figsize=(9, 5),
+        )
+
+    # --- 2. Ligand-receptor heatmap ---
+    ligand_receptor_heatmap = None
+    if vis_lr_network is not None and vis_lr_network.shape[0] > 0:
+        lr_df_vis = pd.DataFrame(
+            vis_lr_network,
+            index=order_receptors,
+            columns=order_ligands_receptor,
+        ).T
+        ligand_receptor_heatmap = make_heatmap_ggplot(
+            lr_df_vis,
+            y_name="Ligands",
+            x_name="Receptors",
+            color="mediumvioletred",
+            legend_position="top",
+            x_axis_position="top",
+            legend_title="Prior interaction potential",
+            figsize=(5, 6),
+        )
+
+    # --- 3. Ligand expression dotplot ---
+    ligand_expression_dotplot = None
+    if len(sender_celltypes) > 0 and len(best_upstream_ligands) > 0:
+        available_ligands = [
+            l for l in best_upstream_ligands if l in adata.var_names
+        ]
+        if available_ligands:
+            mask = adata.obs[celltype_col].astype(str).isin(sender_celltypes)
+            if condition_col is not None:
+                mask = mask & (
+                    adata.obs[condition_col].astype(str) == str(condition_oi)
+                )
+            sub = adata[mask].copy()
+            if assay_oi is not None and assay_oi in sub.layers:
+                sub.X = sub.layers[assay_oi]
+            sub.obs["_sender_ct"] = sub.obs[celltype_col].astype(str).values
+            try:
+                dp = sc.pl.dotplot(
+                    sub,
+                    var_names=available_ligands,
+                    groupby="_sender_ct",
+                    return_fig=True,
+                )
+                dp.make_figure()
+                ligand_expression_dotplot = plt.gcf()
+            except Exception:
+                pass
+
+    # --- 4. LFC heatmap ---
+    ligand_diff_expr_heatmap = None
+    if lfc_matrix is not None and lfc_matrix.shape[0] > 0:
+        order_in_lfc = [
+            l for l in best_upstream_ligands if l in lfc_matrix.index
+        ]
+        if order_in_lfc:
+            vis_lfc = lfc_matrix.loc[order_in_lfc]
+            ligand_diff_expr_heatmap = make_threecolor_heatmap_ggplot(
+                vis_lfc,
+                y_name="Prioritized ligands",
+                x_name="LFC in Sender",
+                low_color="midnightblue",
+                mid_color="white",
+                mid=float(np.median(vis_lfc.values)),
+                high_color="red",
+                legend_position="top",
+                x_axis_position="top",
+                legend_title="LFC",
+                figsize=(4, 5),
+            )
+
+    # --- 5. Combined activity + target heatmap ---
+    ligand_activity_target_heatmap = None
+    if ligand_target_heatmap is not None:
+        # Build AUPR column heatmap for the ordered ligands
+        order_ligands = (
+            list(reversed(best_upstream_ligands))
+            if vis_ligand_target is not None
+            else best_upstream_ligands
+        )
+        aupr_map = dict(
+            zip(lig_activities["test_ligand"], lig_activities["aupr_corrected"])
+        )
+        aupr_vals = [aupr_map.get(l, 0.0) for l in order_ligands]
+        vis_aupr = pd.DataFrame(
+            {"AUPR": aupr_vals}, index=order_ligands
+        )
+
+        n_panels = 2
+        if ligand_diff_expr_heatmap is not None:
+            n_panels += 1
+        if ligand_expression_dotplot is not None:
+            n_panels += 1
+
+        try:
+            fig, axes = plt.subplots(
+                1,
+                n_panels,
+                figsize=(4 * n_panels, max(4, len(order_ligands) * 0.35)),
+                gridspec_kw={"width_ratios": [1] * (n_panels - 1) + [3]},
+            )
+            if n_panels == 1:
+                axes = [axes]
+
+            idx = 0
+            # AUPR heatmap
+            make_heatmap_ggplot(
+                vis_aupr,
+                y_name="Prioritized ligands",
+                x_name="Ligand activity",
+                color="darkorange",
+                legend_title="AUPR",
+                ax=axes[idx],
+            )
+            idx += 1
+
+            # LFC heatmap (if available)
+            if ligand_diff_expr_heatmap is not None and lfc_matrix is not None:
+                order_in_lfc = [
+                    l for l in order_ligands if l in lfc_matrix.index
+                ]
+                if order_in_lfc:
+                    make_threecolor_heatmap_ggplot(
+                        lfc_matrix.loc[order_in_lfc],
+                        y_name="",
+                        x_name="LFC in Sender",
+                        mid=float(np.median(lfc_matrix.loc[order_in_lfc].values)),
+                        legend_title="LFC",
+                        ax=axes[idx],
+                        y_axis=False,
+                    )
+                    idx += 1
+
+            # Dotplot panel placeholder — skip if not available, use target heatmap
+            if ligand_expression_dotplot is not None:
+                # Cannot embed a DotPlot figure inside a subplot easily;
+                # leave that panel blank with a note
+                axes[idx].set_title("Expression\n(see dotplot)", fontsize=8)
+                axes[idx].axis("off")
+                idx += 1
+
+            # Target heatmap
+            if vis_ligand_target is not None:
+                make_heatmap_ggplot(
+                    vis_ligand_target,
+                    y_name="",
+                    x_name="Predicted target genes",
+                    color="purple",
+                    legend_title="Regulatory\npotential",
+                    ax=axes[idx],
+                    y_axis=False,
+                )
+
+            fig.tight_layout()
+            ligand_activity_target_heatmap = fig
+        except Exception:
+            pass
+
+    return {
+        "ligand_target_heatmap": ligand_target_heatmap,
+        "ligand_receptor_heatmap": ligand_receptor_heatmap,
+        "ligand_expression_dotplot": ligand_expression_dotplot,
+        "ligand_differential_expression_heatmap": ligand_diff_expr_heatmap,
+        "ligand_activity_target_heatmap": ligand_activity_target_heatmap,
+    }
 
 
 # ---------------------------------------------------------------------------
@@ -627,6 +836,25 @@ def nichenet_seuratobj_aggregate(
     # Build ligand-receptor DataFrame
     lr_df = lr_top_large.rename(columns={"from": "ligand", "to": "receptor"})
 
+    # Generate figures
+    if verbose:
+        print("Generate visualization figures")
+    figs = _generate_figures(
+        vis_ligand_target=vis_ligand_target,
+        vis_lr_network=vis_lr_network,
+        order_receptors=order_receptors_final,
+        order_ligands_receptor=order_ligands_receptor,
+        lig_activities=lig_activities,
+        best_upstream_ligands=best_upstream_ligands,
+        lfc_matrix=lfc_matrix,
+        adata=adata,
+        celltype_col=celltype_col,
+        sender_celltypes=sender_celltypes,
+        condition_col=condition_col,
+        condition_oi=condition_oi,
+        assay_oi=assay_oi,
+    )
+
     return {
         "ligand_activities": lig_activities,
         "top_ligands": best_upstream_ligands,
@@ -636,11 +864,11 @@ def nichenet_seuratobj_aggregate(
         "ligand_target_df": active_lt_df,
         "ligand_receptor_matrix": vis_lr_network,
         "ligand_receptor_df": lr_df,
-        "ligand_receptor_heatmap": None,  # No ggplot equivalent; users can use seaborn/matplotlib
-        "ligand_target_heatmap": None,
-        "ligand_expression_dotplot": None,
-        "ligand_differential_expression_heatmap": lfc_matrix,
-        "ligand_activity_target_heatmap": None,
+        "ligand_receptor_heatmap": figs["ligand_receptor_heatmap"],
+        "ligand_target_heatmap": figs["ligand_target_heatmap"],
+        "ligand_expression_dotplot": figs["ligand_expression_dotplot"],
+        "ligand_differential_expression_heatmap": figs["ligand_differential_expression_heatmap"],
+        "ligand_activity_target_heatmap": figs["ligand_activity_target_heatmap"],
         "geneset_oi": geneset_oi,
         "background_expressed_genes": background_expressed_genes,
     }
@@ -1002,8 +1230,12 @@ def nichenet_seuratobj_cluster_de(
     ]
 
     vis_lr_network = None
+    order_receptors_final: list[str] = []
+    order_ligands_receptor: list[str] = []
     if len(lr_top_large) > 0:
-        vis_lr_network, _, _ = _build_lr_receptor_matrix(lr_top_large)
+        vis_lr_network, order_receptors_final, order_ligands_receptor = (
+            _build_lr_receptor_matrix(lr_top_large)
+        )
 
     lr_df = lr_top_large.rename(columns={"from": "ligand", "to": "receptor"})
 
@@ -1027,6 +1259,25 @@ def nichenet_seuratobj_cluster_de(
         if lfc_cols:
             lfc_matrix = lfc_table.set_index("gene")[lfc_cols]
 
+    # Generate figures
+    if verbose:
+        print("Generate visualization figures")
+    figs = _generate_figures(
+        vis_ligand_target=vis_ligand_target,
+        vis_lr_network=vis_lr_network,
+        order_receptors=order_receptors_final,
+        order_ligands_receptor=order_ligands_receptor,
+        lig_activities=lig_activities,
+        best_upstream_ligands=best_upstream_ligands,
+        lfc_matrix=lfc_matrix,
+        adata=adata,
+        celltype_col=celltype_col,
+        sender_celltypes=sender_celltypes,
+        condition_col=condition_col,
+        condition_oi=condition_oi,
+        assay_oi=assay_oi,
+    )
+
     return {
         "ligand_activities": lig_activities,
         "top_ligands": best_upstream_ligands,
@@ -1036,11 +1287,11 @@ def nichenet_seuratobj_cluster_de(
         "ligand_target_df": active_lt_df,
         "ligand_receptor_matrix": vis_lr_network,
         "ligand_receptor_df": lr_df,
-        "ligand_receptor_heatmap": None,
-        "ligand_target_heatmap": None,
-        "ligand_expression_dotplot": None,
-        "ligand_differential_expression_heatmap": lfc_matrix,
-        "ligand_activity_target_heatmap": None,
+        "ligand_receptor_heatmap": figs["ligand_receptor_heatmap"],
+        "ligand_target_heatmap": figs["ligand_target_heatmap"],
+        "ligand_expression_dotplot": figs["ligand_expression_dotplot"],
+        "ligand_differential_expression_heatmap": figs["ligand_differential_expression_heatmap"],
+        "ligand_activity_target_heatmap": figs["ligand_activity_target_heatmap"],
         "geneset_oi": geneset_oi,
         "background_expressed_genes": background_expressed_genes,
     }

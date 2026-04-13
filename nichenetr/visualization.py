@@ -15,12 +15,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-try:
-    import seaborn as sns
-
-    _HAS_SEABORN = True
-except ImportError:  # pragma: no cover
-    _HAS_SEABORN = False
+import seaborn as sns
 
 try:
     from pycirclize import Circos
@@ -169,26 +164,16 @@ def make_heatmap_ggplot(
     else:
         fig = ax.get_figure()
 
-    if _HAS_SEABORN:
-        cbar_kws = {"label": legend_title}
-        sns.heatmap(
-            df,
-            ax=ax,
-            cmap=cmap,
-            linewidths=0.5,
-            linecolor="white",
-            cbar=legend_position != "none",
-            cbar_kws=cbar_kws,
-        )
-    else:
-        im = ax.imshow(df.values, aspect="auto", cmap=cmap)
-        ax.set_xticks(range(df.shape[1]))
-        ax.set_xticklabels(df.columns)
-        ax.set_yticks(range(df.shape[0]))
-        ax.set_yticklabels(df.index)
-        if legend_position != "none":
-            cbar = fig.colorbar(im, ax=ax)
-            cbar.set_label(legend_title)
+    cbar_kws = {"label": legend_title}
+    sns.heatmap(
+        df,
+        ax=ax,
+        cmap=cmap,
+        linewidths=0.5,
+        linecolor="white",
+        cbar=legend_position != "none",
+        cbar_kws=cbar_kws,
+    )
 
     # Axis visibility
     if not x_axis:
@@ -302,27 +287,17 @@ def make_threecolor_heatmap_ggplot(
     else:
         fig = ax.get_figure()
 
-    if _HAS_SEABORN:
-        cbar_kws = {"label": legend_title}
-        sns.heatmap(
-            df,
-            ax=ax,
-            cmap=cmap,
-            norm=norm,
-            linewidths=0.5,
-            linecolor="white",
-            cbar=legend_position != "none",
-            cbar_kws=cbar_kws,
-        )
-    else:
-        im = ax.imshow(df.values, aspect="auto", cmap=cmap, norm=norm)
-        ax.set_xticks(range(df.shape[1]))
-        ax.set_xticklabels(df.columns)
-        ax.set_yticks(range(df.shape[0]))
-        ax.set_yticklabels(df.index)
-        if legend_position != "none":
-            cbar = fig.colorbar(im, ax=ax)
-            cbar.set_label(legend_title)
+    cbar_kws = {"label": legend_title}
+    sns.heatmap(
+        df,
+        ax=ax,
+        cmap=cmap,
+        norm=norm,
+        linewidths=0.5,
+        linecolor="white",
+        cbar=legend_position != "none",
+        cbar_kws=cbar_kws,
+    )
 
     if not x_axis:
         ax.set_xticklabels([])

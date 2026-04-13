@@ -323,17 +323,14 @@ def _generate_figures(
             if assay_oi is not None and assay_oi in sub.layers:
                 sub.X = sub.layers[assay_oi]
             sub.obs["_sender_ct"] = sub.obs[celltype_col].astype(str).values
-            try:
-                dp = sc.pl.dotplot(
-                    sub,
-                    var_names=available_ligands,
-                    groupby="_sender_ct",
-                    return_fig=True,
-                )
-                dp.make_figure()
-                ligand_expression_dotplot = plt.gcf()
-            except Exception:
-                pass
+            dp = sc.pl.dotplot(
+                sub,
+                var_names=available_ligands,
+                groupby="_sender_ct",
+                return_fig=True,
+            )
+            dp.make_figure()
+            ligand_expression_dotplot = plt.gcf()
 
     # --- 4. LFC heatmap ---
     ligand_diff_expr_heatmap = None
@@ -380,69 +377,64 @@ def _generate_figures(
         if ligand_expression_dotplot is not None:
             n_panels += 1
 
-        try:
-            fig, axes = plt.subplots(
-                1,
-                n_panels,
-                figsize=(4 * n_panels, max(4, len(order_ligands) * 0.35)),
-                gridspec_kw={"width_ratios": [1] * (n_panels - 1) + [3]},
-            )
-            if n_panels == 1:
-                axes = [axes]
+        fig, axes = plt.subplots(
+            1,
+            n_panels,
+            figsize=(4 * n_panels, max(4, len(order_ligands) * 0.35)),
+            gridspec_kw={"width_ratios": [1] * (n_panels - 1) + [3]},
+        )
+        if n_panels == 1:
+            axes = [axes]
 
-            idx = 0
-            # AUPR heatmap
-            make_heatmap_ggplot(
-                vis_aupr,
-                y_name="Prioritized ligands",
-                x_name="Ligand activity",
-                color="darkorange",
-                legend_title="AUPR",
-                ax=axes[idx],
-            )
-            idx += 1
+        idx = 0
+        # AUPR heatmap
+        make_heatmap_ggplot(
+            vis_aupr,
+            y_name="Prioritized ligands",
+            x_name="Ligand activity",
+            color="darkorange",
+            legend_title="AUPR",
+            ax=axes[idx],
+        )
+        idx += 1
 
-            # LFC heatmap (if available)
-            if ligand_diff_expr_heatmap is not None and lfc_matrix is not None:
-                order_in_lfc = [
-                    l for l in order_ligands if l in lfc_matrix.index
-                ]
-                if order_in_lfc:
-                    make_threecolor_heatmap_ggplot(
-                        lfc_matrix.loc[order_in_lfc],
-                        y_name="",
-                        x_name="LFC in Sender",
-                        mid=float(np.median(lfc_matrix.loc[order_in_lfc].values)),
-                        legend_title="LFC",
-                        ax=axes[idx],
-                        y_axis=False,
-                    )
-                    idx += 1
-
-            # Dotplot panel placeholder — skip if not available, use target heatmap
-            if ligand_expression_dotplot is not None:
-                # Cannot embed a DotPlot figure inside a subplot easily;
-                # leave that panel blank with a note
-                axes[idx].set_title("Expression\n(see dotplot)", fontsize=8)
-                axes[idx].axis("off")
-                idx += 1
-
-            # Target heatmap
-            if vis_ligand_target is not None:
-                make_heatmap_ggplot(
-                    vis_ligand_target,
+        # LFC heatmap (if available)
+        if ligand_diff_expr_heatmap is not None and lfc_matrix is not None:
+            order_in_lfc = [
+                l for l in order_ligands if l in lfc_matrix.index
+            ]
+            if order_in_lfc:
+                make_threecolor_heatmap_ggplot(
+                    lfc_matrix.loc[order_in_lfc],
                     y_name="",
-                    x_name="Predicted target genes",
-                    color="purple",
-                    legend_title="Regulatory\npotential",
+                    x_name="LFC in Sender",
+                    mid=float(np.median(lfc_matrix.loc[order_in_lfc].values)),
+                    legend_title="LFC",
                     ax=axes[idx],
                     y_axis=False,
                 )
+                idx += 1
 
-            fig.tight_layout()
-            ligand_activity_target_heatmap = fig
-        except Exception:
-            pass
+        # Dotplot panel placeholder
+        if ligand_expression_dotplot is not None:
+            axes[idx].set_title("Expression\n(see dotplot)", fontsize=8)
+            axes[idx].axis("off")
+            idx += 1
+
+        # Target heatmap
+        if vis_ligand_target is not None:
+            make_heatmap_ggplot(
+                vis_ligand_target,
+                y_name="",
+                x_name="Predicted target genes",
+                color="purple",
+                legend_title="Regulatory\npotential",
+                ax=axes[idx],
+                y_axis=False,
+            )
+
+        fig.tight_layout()
+        ligand_activity_target_heatmap = fig
 
     return {
         "ligand_target_heatmap": ligand_target_heatmap,

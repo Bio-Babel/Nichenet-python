@@ -511,37 +511,6 @@ class TestCircosFallback:
         assert isinstance(fig, matplotlib.figure.Figure)
 
 
-class TestHeatmapWithoutSeaborn:
-    """Test imshow fallback when seaborn is temporarily patched away."""
-
-    def test_heatmap_without_seaborn(self):
-        import nichenetr.visualization as viz
-        old = viz._HAS_SEABORN
-        try:
-            viz._HAS_SEABORN = False
-            matrix = pd.DataFrame(np.random.rand(3, 3), index=["a", "b", "c"], columns=["x", "y", "z"])
-            fig = make_heatmap_ggplot(matrix)
-            assert isinstance(fig, matplotlib.figure.Figure)
-
-            fig2 = make_heatmap_ggplot(matrix, legend_position="none")
-            assert isinstance(fig2, matplotlib.figure.Figure)
-        finally:
-            viz._HAS_SEABORN = old
-
-    def test_threecolor_without_seaborn(self):
-        import nichenetr.visualization as viz
-        old = viz._HAS_SEABORN
-        try:
-            viz._HAS_SEABORN = False
-            matrix = pd.DataFrame(np.random.randn(3, 3), index=["a", "b", "c"], columns=["x", "y", "z"])
-            fig = make_threecolor_heatmap_ggplot(matrix)
-            assert isinstance(fig, matplotlib.figure.Figure)
-
-            fig2 = make_threecolor_heatmap_ggplot(matrix, legend_position="none")
-            assert isinstance(fig2, matplotlib.figure.Figure)
-        finally:
-            viz._HAS_SEABORN = old
-
 
 class TestMakeCircosLrDuplicates:
     """Test circos LR with duplicate ligand/receptor names across senders."""

@@ -1,0 +1,22 @@
+[
+  {
+    "parameter": "damping_factor",
+    "avg_weight": 0.7886,
+    "median_weight": 0.8301
+  },
+  {
+    "parameter": "gr_hub",
+    "avg_weight": 0.0803,
+    "median_weight": 0.0525
+  },
+  {
+    "parameter": "lr_sig_hub",
+    "avg_weight": 0.1146,
+    "median_weight": 0.085
+  },
+  {
+    "parameter": "ltf_cutoff",
+    "avg_weight": 0.9256,
+    "median_weight": 0.9197
+  }
+]

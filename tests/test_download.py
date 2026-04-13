@@ -10,35 +10,8 @@ from nichenetr._download import _verify_sha256, resolve_data_path
 
 
 class TestResolveDataPath:
-    def test_local_staging_found(self, tmp_path, monkeypatch):
-        """If the file exists in local staging dir, return it directly."""
-        staging = tmp_path / "nichenetr_data"
-        staging.mkdir()
-        f = staging / "test.parquet"
-        f.write_text("data")
-
-        monkeypatch.setattr(
-            "nichenetr._download._PKG_ROOT",
-            tmp_path / "nichenetr_py",
-        )
-        # _PKG_ROOT.parent / DATA_DIR_NAME => tmp_path / nichenetr_data
-        # We need _PKG_ROOT.parent == tmp_path
-        monkeypatch.setattr(
-            "nichenetr._download._PKG_ROOT",
-            tmp_path / "fake_pkg",
-        )
-        result = resolve_data_path("test.parquet")
-        # It should find it in staging since tmp_path/fake_pkg/../nichenetr_data/test.parquet
-        assert result == f
-        assert result.exists()
-
     def test_cache_found(self, tmp_path, monkeypatch):
         """If the file exists in cache, return it."""
-        # Make local staging not exist
-        monkeypatch.setattr(
-            "nichenetr._download._PKG_ROOT",
-            tmp_path / "no_pkg",
-        )
         cache_dir = tmp_path / ".cache" / "nichenetr_py"
         cache_dir.mkdir(parents=True)
         f = cache_dir / "cached.parquet"
@@ -50,23 +23,15 @@ class TestResolveDataPath:
         assert result == f
 
     def test_not_in_registry_raises(self, tmp_path, monkeypatch):
-        """If file is not found locally and not in registry, raise."""
-        monkeypatch.setattr(
-            "nichenetr._download._PKG_ROOT",
-            tmp_path / "no_pkg",
-        )
+        """If file is not found in cache and not in registry, raise."""
         monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
         monkeypatch.setattr("nichenetr._download.REGISTRY", {})
 
-        with pytest.raises(FileNotFoundError, match="not found locally"):
+        with pytest.raises(FileNotFoundError, match="not found in cache or registry"):
             resolve_data_path("nonexistent.parquet")
 
     def test_no_url_in_registry_raises(self, tmp_path, monkeypatch):
         """If registry entry has no URL, raise."""
-        monkeypatch.setattr(
-            "nichenetr._download._PKG_ROOT",
-            tmp_path / "no_pkg",
-        )
         monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
         monkeypatch.setattr(
             "nichenetr._download.REGISTRY",
@@ -78,10 +43,6 @@ class TestResolveDataPath:
 
     def test_download_and_verify(self, tmp_path, monkeypatch):
         """If file needs downloading, download and verify sha256."""
-        monkeypatch.setattr(
-            "nichenetr._download._PKG_ROOT",
-            tmp_path / "no_pkg",
-        )
         monkeypatch.setattr("pathlib.Path.home", lambda: tmp_path)
 
         content = b"hello world"

@@ -6,7 +6,6 @@ to update after uploading new data.
 Production Zenodo record: https://zenodo.org/records/19549668
 """
 
-DATA_DIR_NAME = "nichenetr_data"
 CACHE_DIR_NAME = "nichenetr_py"
 
 REGISTRY: dict[str, dict[str, str]] = {

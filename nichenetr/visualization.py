@@ -165,7 +165,7 @@ def make_heatmap_ggplot(
     )
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=figsize or (max(4, df.shape[1] * 0.5), max(3, df.shape[0] * 0.4)))
+        fig, ax = plt.subplots(figsize=figsize or (max(3, df.shape[1] * 0.6 + 1), max(4, df.shape[0] * 0.35 + 1)))
     else:
         fig = ax.get_figure()
 
@@ -298,7 +298,7 @@ def make_threecolor_heatmap_ggplot(
     norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=mid, vmax=vmax)
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=figsize or (max(4, df.shape[1] * 0.5), max(3, df.shape[0] * 0.4)))
+        fig, ax = plt.subplots(figsize=figsize or (max(3, df.shape[1] * 0.6 + 1), max(4, df.shape[0] * 0.35 + 1)))
     else:
         fig = ax.get_figure()
 
@@ -412,7 +412,7 @@ def make_line_plot(
     df_plot = df[(df["rank"] >= start) & (df["rank"] <= end)].copy()
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=figsize or (6, max(3, len(df_plot) * 0.35)))
+        fig, ax = plt.subplots(figsize=figsize or (4, max(4, len(df_plot) * 0.3)))
     else:
         fig = ax.get_figure()
 
@@ -1126,7 +1126,7 @@ def _circos_pycirclize(
         if track is not None:
             track.axis(fc=colour, ec="none")
 
-    fig = circos.plotfig(figsize=figsize or (8, 8))
+    fig = circos.plotfig(figsize=figsize or (7, 7))
     if show:
         plt.show()
     return fig
@@ -1176,7 +1176,7 @@ def _circos_fallback(
     n = len(order_filtered)
 
     if ax is None:
-        fig, ax = plt.subplots(figsize=figsize or (max(8, n * 0.4), max(4, n * 0.25)))
+        fig, ax = plt.subplots(figsize=figsize or (max(7, n * 0.4), max(4, n * 0.25)))
     else:
         fig = ax.get_figure()
 

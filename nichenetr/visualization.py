@@ -290,7 +290,11 @@ def make_threecolor_heatmap_ggplot(
 
     vmin = df.values.min()
     vmax = df.values.max()
-    # TwoSlopeNorm centres the colormap on *mid*
+    # TwoSlopeNorm requires vmin < vcenter < vmax
+    if vmin >= mid:
+        vmin = mid - 1.0
+    if vmax <= mid:
+        vmax = mid + 1.0
     norm = mcolors.TwoSlopeNorm(vmin=vmin, vcenter=mid, vmax=vmax)
 
     if ax is None:

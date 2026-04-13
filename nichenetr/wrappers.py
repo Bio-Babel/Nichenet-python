@@ -14,6 +14,7 @@ import anndata as ad
 import numpy as np
 import pandas as pd
 import scanpy as sc
+import scipy.sparse
 from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.spatial.distance import pdist
 
@@ -372,14 +373,20 @@ def nichenet_seuratobj_aggregate(
             lr_net = lr_net.rename(columns={"from": "ligand", "to": "receptor"})
 
     # Determine ligand-target matrix gene names
-    # Keep the original for predict_ligand_activities (expects NamedMatrix)
-    lt_matrix_original = ligand_target_matrix
+    # Keep/create a NamedMatrix for predict_ligand_activities
     if isinstance(ligand_target_matrix, pd.DataFrame):
         lt_matrix = ligand_target_matrix
         lt_target_genes = lt_matrix.index.tolist()
         lt_ligand_genes = lt_matrix.columns.tolist()
+        from .datasets import NamedMatrix as _NM
+        lt_matrix_original = _NM(
+            data=scipy.sparse.csr_matrix(lt_matrix.values),
+            rownames=lt_target_genes,
+            colnames=lt_ligand_genes,
+        )
     else:
         # Assume a NamedMatrix (has .rownames, .colnames, .data)
+        lt_matrix_original = ligand_target_matrix
         lt_target_genes = list(ligand_target_matrix.rownames)
         lt_ligand_genes = list(ligand_target_matrix.colnames)
         _lt_data = ligand_target_matrix.data
@@ -750,13 +757,19 @@ def nichenet_seuratobj_cluster_de(
         if "ligand" not in lr_net.columns:
             lr_net = lr_net.rename(columns={"from": "ligand", "to": "receptor"})
 
-    lt_matrix_original = ligand_target_matrix
     if isinstance(ligand_target_matrix, pd.DataFrame):
         lt_matrix = ligand_target_matrix
         lt_target_genes = lt_matrix.index.tolist()
         lt_ligand_genes = lt_matrix.columns.tolist()
+        from .datasets import NamedMatrix as _NM
+        lt_matrix_original = _NM(
+            data=scipy.sparse.csr_matrix(lt_matrix.values),
+            rownames=lt_target_genes,
+            colnames=lt_ligand_genes,
+        )
     else:
         # Assume a NamedMatrix (has .rownames, .colnames, .data)
+        lt_matrix_original = ligand_target_matrix
         lt_target_genes = list(ligand_target_matrix.rownames)
         lt_ligand_genes = list(ligand_target_matrix.colnames)
         _lt_data = ligand_target_matrix.data

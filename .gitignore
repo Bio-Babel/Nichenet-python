@@ -28,3 +28,4 @@ Thumbs.db
 .ipynb_checkpoints/
 site/
 validation/
+.coverage

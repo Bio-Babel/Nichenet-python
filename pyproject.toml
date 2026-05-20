@@ -5,9 +5,42 @@ build-backend = "hatchling.build"
 [project]
 name = "nichenet-python"
 version = "2.2.1.1"
-description = "Python port of the R nichenetr package"
+description = "Python nichenetr package — modeling intercellular communication by linking ligands to target genes."
+readme = "README.md"
 requires-python = ">=3.10"
 license = "GPL-3.0-only"
+license-files = ["LICENSE"]
+authors = [
+    { name = "Jeffery Liu", email = "jeffliu.lucky@gmail.com" },
+]
+keywords = [
+    "nichenet",
+    "nichenetr",
+    "intercellular-communication",
+    "ligand-receptor",
+    "ligand-target",
+    "single-cell",
+    "scRNA-seq",
+    "cell-cell-interaction",
+    "R-port",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Bio-Informatics",
+    "Topic :: Scientific/Engineering :: Visualization",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+    "Typing :: Typed",
+]
 dependencies = [
     "numpy>=1.24",
     "pandas>=2.0",
@@ -23,14 +56,31 @@ dependencies = [
 
 [project.optional-dependencies]
 circos = ["pycirclize>=1.0"]
-dev = ["pytest", "pytest-cov", "ruff"]
+dev = ["pytest", "pytest-cov", "ruff", "build", "twine"]
 docs = ["mkdocs", "mkdocstrings[python]", "mkdocs-material", "mkdocs-jupyter"]
+
+[project.urls]
+Homepage            = "https://github.com/Bio-Babel/Nichenet-python"
+Repository          = "https://github.com/Bio-Babel/Nichenet-python"
+Issues              = "https://github.com/Bio-Babel/Nichenet-python/issues"
+Documentation       = "https://github.com/Bio-Babel/Nichenet-python#readme"
+"Upstream (R package)" = "https://github.com/saeyslab/nichenetr"
 
 [tool.hatch.build.targets.wheel]
 packages = ["nichenetr"]
 
-[tool.hatch.build.targets.wheel.force-include]
-"tutorials" = "tutorials"
+[tool.hatch.build.targets.sdist]
+exclude = [
+    "tutorials/",
+    "docs/",
+    "tests/",
+    "site/",
+    "mkdocs.yml",
+    ".github/",
+    "*.egg-info/",
+    "build/",
+    "dist/",
+]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

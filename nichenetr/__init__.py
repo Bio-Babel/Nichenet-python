@@ -6,6 +6,7 @@ target genes.
 """
 
 __version__ = "2.2.1.1"
+__r_commit__ = "2d5c1ab"
 
 from .utils import (
     scaling_zscore,

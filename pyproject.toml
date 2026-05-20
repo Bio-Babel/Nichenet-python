@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "nichenetr_py"
+name = "nichenet-python"
 version = "2.2.1.1"
 description = "Python port of the R nichenetr package"
 requires-python = ">=3.10"

@@ -1,0 +1,37 @@
+id: nichenetr.canonical_gene_symbols_required
+name: Canonical gene symbols required before matching against prior networks
+category: invariant
+description: >-
+  Every nichenetr function that matches genes against a prior network
+  (ligand_target_matrix.rownames/colnames, lr_network["from"/"to"],
+  weighted_networks, sig_network, gr_network) does an exact string match —
+  there is no fuzzy or alias-aware lookup inside those functions. Gene
+  symbols must therefore be canonicalized to the same convention as the
+  prior networks (official gene symbols for the target organism) before
+  computing expressed genes, differential expression, or ligand activity.
+invariants:
+- Call alias_to_symbol_anndata(adata, organism) immediately after loading an
+  AnnData, before get_expressed_genes, calculate_de, get_exprs_avg, or any
+  other function that reads adata.var_names — every AnnData-based tutorial
+  does this as the very first step after loading data.
+- For a raw (non-AnnData) expression matrix, call
+  convert_alias_to_symbols(columns, organism) on the gene/column names before
+  deriving expressed-gene or ligand lists from it.
+- An uncanonicalized alias that does not match any ligand_target_matrix row/column
+  or lr_network endpoint does not raise an error in downstream calls — it is
+  silently excluded from the analysis (e.g. predict_ligand_activities only
+  raises when the ENTIRE gene universe is disjoint), so skipping this step
+  can quietly shrink or bias the analyzed gene set rather than fail loudly.
+mental_model: >-
+  For R users: this replaces R nichenetr's `alias_to_symbol_seurat`, and is
+  still a required manual step before `get_expressed_genes`/`predict_ligand_activities`
+  equivalents — the Python port did not add automatic canonicalization
+  inside those functions either.
+  For Python users: alias_to_symbol_anndata returns a NEW AnnData (it copies
+  before renaming) — reassign the result back to your working variable
+  (`adata = nn.alias_to_symbol_anndata(adata, organism=...)`), since the
+  original object passed in is left unmodified.
+  General: canonicalize once, immediately after loading data, before any
+  other nichenetr call that reads gene names from that object.
+related_concepts:
+- nichenetr.organism_consistent_prior_networks

@@ -1,0 +1,51 @@
+id: nichenetr.get_ligand_target_links_oi
+import_path: nichenetr.targets.get_ligand_target_links_oi
+kind: function
+signature: 'get_ligand_target_links_oi(ligand_type_indication_df: ''pd.DataFrame'',
+  active_ligand_target_links_df: ''pd.DataFrame'', cutoff: ''float'' = 0.40) -> ''pd.DataFrame'''
+purpose: Filter and annotate ligand-target links for circos visualization.
+description: >-
+  Joins ligand_type_indication_df (columns ligand_type, ligand) onto
+  active_ligand_target_links_df (columns ligand, target, weight,
+  target_type), then drops ligands/targets whose links are all below the
+  weight quantile cutoff. The quantile value used is stashed in
+  result.attrs["cutoff_include_all_ligands"] (pandas DataFrame-level
+  metadata on the returned object, not a mutation of any input).
+parameters:
+- name: ligand_type_indication_df
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Columns [ligand_type, ligand] — e.g. the output of assign_ligands_to_celltype.
+- name: active_ligand_target_links_df
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Columns [ligand, target, weight, target_type] — concatenation of get_weighted_ligand_target_links results across ligands, enriched with target_type.
+- name: cutoff
+  type: float
+  required: false
+  default: 0.40
+mutates: 'execution_class=pure_function; inputs only read; returns_kind=new_object'
+returns: A new filtered pd.DataFrame with the same columns plus the joined ligand_type.
+requires:
+- result.ligand_target_links
+- result.ligand_type_indication_df
+writes:
+- result.circos_links
+examples:
+- get_ligand_target_links_oi(ligand_type_indication_df=ligand_type_indication_df,
+  active_ligand_target_links_df=active_ligand_target_links_df, cutoff=0.40)
+failure_fixes:
+- when: Required columns (ligand_type, ligand, target, weight, target_type) are missing.
+  suggest:
+  - Raises ValueError naming the missing column group — verify
+    ligand_type_indication_df and active_ligand_target_links_df schemas
+    match get_weighted_ligand_target_links / assign_ligands_to_celltype output.
+- when: cutoff is outside [0, 1].
+  suggest:
+  - Raises ValueError "cutoff must be between..." — pass a fraction in [0, 1].
+related:
+- nichenetr.assign_ligands_to_celltype
+- nichenetr.get_weighted_ligand_target_links
+- nichenetr.prepare_circos_visualization

@@ -1,0 +1,30 @@
+id: nichenetr.load_geneinfo_alias
+import_path: nichenetr.load_geneinfo_alias
+kind: function
+signature: 'load_geneinfo_alias(organism: ''str'' = ''human'') -> ''pd.DataFrame'''
+purpose: Load the bundled gene-alias-to-official-symbol mapping table for an organism.
+description: >-
+  Reads geneinfo_alias_{organism}.parquet directly from the package's
+  bundled resources directory (nichenetr/resources/) — no network access, no
+  cache dependency; safe to call in offline/CI contexts. Known bundled
+  organisms are "human" and "mouse". Powers convert_alias_to_symbols and
+  alias_to_symbol_anndata.
+parameters:
+- name: organism
+  type: str
+  required: false
+  default: human
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A pd.DataFrame with columns [alias, symbol].
+requires: []
+writes: []
+examples:
+- load_geneinfo_alias(organism="mouse")
+failure_fixes:
+- when: organism does not correspond to a bundled geneinfo_alias_{organism}.parquet file.
+  suggest:
+  - Raises FileNotFoundError — use one of the bundled organisms ("human", "mouse").
+related:
+- nichenetr.convert_alias_to_symbols
+- nichenetr.alias_to_symbol_anndata
+- nichenetr.load_geneinfo

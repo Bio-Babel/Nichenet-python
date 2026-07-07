@@ -1,0 +1,27 @@
+id: nichenetr.load_geneinfo
+import_path: nichenetr.load_geneinfo
+kind: function
+signature: 'load_geneinfo(version: ''str'' = ''2022'') -> ''pd.DataFrame'''
+purpose: Load a bundled gene information table for a given annotation version.
+description: >-
+  Reads geneinfo_{version}.parquet directly from the package's bundled
+  resources directory (nichenetr/resources/) — no network access, no cache
+  dependency; safe to call in offline/CI contexts. Known bundled versions
+  are "2022" and "human".
+parameters:
+- name: version
+  type: str
+  required: false
+  default: '2022'
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A pd.DataFrame of gene metadata for the requested version.
+requires: []
+writes: []
+examples:
+- load_geneinfo(version="2022")
+failure_fixes:
+- when: version does not correspond to a bundled geneinfo_{version}.parquet file.
+  suggest:
+  - Raises FileNotFoundError — use one of the bundled versions ("2022", "human").
+related:
+- nichenetr.load_geneinfo_alias

@@ -1,0 +1,46 @@
+id: nichenetr.single_ligand_activity_score_regression
+import_path: nichenetr.single_ligand_activity_score_regression
+kind: function
+signature: 'single_ligand_activity_score_regression(ligand_activities: ''pd.DataFrame'',
+  scores_tbl: ''pd.DataFrame'') -> ''pd.DataFrame'''
+purpose: Correlate per-cell normalized ligand activity against a cell-level phenotype score.
+description: >-
+  Inner-merges ligand_activities (a wide cell x ligand table, the output of
+  normalize_single_cell_ligand_activities, requiring a "cell" column) with
+  scores_tbl (requiring "cell" and "score" columns) on "cell". For every
+  ligand column, computes Pearson and Spearman correlation with score
+  (and their -log10 p-values), and — when there are more than 2 cells and
+  the ligand's values are non-constant — a simple linear regression
+  (R-squared, adjusted R-squared, inverse residual RMSE) of score on the
+  ligand's activity.
+parameters:
+- name: ligand_activities
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Wide table with a "cell" column plus one column per ligand — the output of normalize_single_cell_ligand_activities.
+- name: scores_tbl
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Table with "cell" and "score" columns holding a cell-level phenotype score to correlate against.
+mutates: 'execution_class=pure_function; no in-place mutation of either input;
+  returns_kind=new_object'
+returns: >-
+  A new pd.DataFrame, one row per ligand, with columns [ligand,
+  pearson_regression, spearman_regression, pearson_log_pval,
+  spearman_log_pval, r_squared, adj_r_squared, inverse_rmse].
+requires:
+- result.normalized_single_cell_activities
+writes:
+- result.ligand_score_regression
+examples:
+- single_ligand_activity_score_regression(normalized_ligand_activities, cell_scores_tbl)
+failure_fixes:
+- when: A ligand column is constant across all merged cells.
+  suggest:
+  - No exception is raised; correlation/regression statistics for that ligand
+    are NaN instead of a divide-by-zero error.
+related:
+- nichenetr.normalize_single_cell_ligand_activities
+- nichenetr.predict_single_cell_ligand_activities

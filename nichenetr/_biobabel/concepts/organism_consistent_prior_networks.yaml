@@ -1,0 +1,40 @@
+id: nichenetr.organism_consistent_prior_networks
+name: Organism-consistent prior networks
+category: data-contract
+description: >-
+  Every NicheNet prior-knowledge network loaded for one analysis
+  (ligand_target_matrix, lr_network, weighted_networks, and any gene lists
+  derived from an AnnData/expression matrix) must be for the same organism.
+  Mixing organisms is never demonstrated in the tutorials and is not
+  validated by the loaders themselves — load_lr_network,
+  load_ligand_target_matrix, and load_weighted_networks each take an
+  independent organism parameter, so nothing prevents calling them with
+  different values.
+invariants:
+- All of load_lr_network(organism), load_ligand_target_matrix(organism), and
+  load_weighted_networks(organism) must be called with the same organism
+  string within one analysis.
+- load_sig_network and load_gr_network are human-only (no organism
+  parameter); do not combine them with mouse ligand_target_matrix/lr_network
+  in nichenetr.ligand_target_signaling_path.
+- Gene symbols fed into predict_ligand_activities, get_weighted_ligand_target_links,
+  and get_weighted_ligand_receptor_links must be canonicalized for the same
+  organism as the loaded prior networks (see
+  nichenetr.canonical_gene_symbols_required).
+mental_model: >-
+  For R users: this mirrors nichenetr's R convention of passing a single
+  `organism` argument through a pipeline of `get_ligand_*` calls — there is
+  no automatic organism inference or cross-organism ortholog mapping in
+  either the R or Python version.
+  For Python users: there is no runtime check that ties organism choices
+  together across load_lr_network/load_ligand_target_matrix/load_weighted_networks
+  calls; an organism mismatch degrades silently rather than raising —
+  predict_ligand_activities raises "No overlap" only when the gene universe
+  is entirely disjoint, and get_weighted_ligand_target_links returns a
+  single NaN row for a ligand/gene mismatch rather than erroring, so a
+  partial organism mismatch can produce plausible-looking but wrong results.
+  General: always load every prior network for one analysis with the same
+  organism value, and canonicalize input gene lists for that same organism
+  before matching them against the networks.
+related_concepts:
+- nichenetr.canonical_gene_symbols_required

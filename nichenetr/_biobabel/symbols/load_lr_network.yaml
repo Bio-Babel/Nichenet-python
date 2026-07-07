@@ -1,0 +1,32 @@
+id: nichenetr.load_lr_network
+import_path: nichenetr.load_lr_network
+kind: function
+signature: 'load_lr_network(organism: ''str'' = ''mouse'') -> ''pd.DataFrame'''
+purpose: Load the prior ligand-receptor network.
+description: >-
+  Resolves lr_network_{organism}.parquet via resolve_data_path: served from
+  ~/.cache/nichenetr_py/ if cached, otherwise downloaded from the package's
+  Zenodo record (SHA-256 verified) and cached there — a real network request
+  on a cache miss. Do not call in network-restricted contexts without a
+  pre-populated cache or a mock of resolve_data_path.
+parameters:
+- name: organism
+  type: str
+  required: false
+  default: mouse
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A pd.DataFrame with columns [from, to, source, database].
+requires: []
+writes:
+- result.lr_network
+examples:
+- load_lr_network(organism="human")
+failure_fixes:
+- when: No cached copy exists and there is no network access.
+  suggest:
+  - Raises an error from the underlying urllib download — pre-populate the
+    cache or mock nichenetr.datasets.resolve_data_path.
+related:
+- nichenetr.get_weighted_ligand_receptor_links
+- nichenetr.process_table_to_ic
+- nichenetr.infer_supporting_datasources

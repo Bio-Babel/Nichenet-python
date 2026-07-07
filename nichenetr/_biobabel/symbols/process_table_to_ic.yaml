@@ -1,0 +1,68 @@
+id: nichenetr.process_table_to_ic
+import_path: nichenetr.prioritization.process_table_to_ic
+kind: function
+signature: 'process_table_to_ic(table_obj: ''pd.DataFrame'', table_type: ''str'' =
+  "expression", lr_network: ''Optional[pd.DataFrame]'' = None, senders_oi: ''Optional[Sequence[str]]''
+  = None, receivers_oi: ''Optional[Sequence[str]]'' = None) -> ''pd.DataFrame'''
+purpose: Join a per-gene expression/DE table onto the ligand-receptor network to build a sender-ligand/receiver-receptor table.
+description: >-
+  Depending on table_type ("expression" from get_exprs_avg, "celltype_DE"
+  from calculate_de, or "group_DE" for a condition-level DE table), reads
+  the corresponding columns of table_obj and merges it with lr_network
+  (renamed to ligand/receptor if needed) twice — once as the sender/ligand
+  side, once as the receiver/receptor side — computing a combined metric
+  (ligand_receptor_prod for expression, ligand_receptor_lfc_avg for DE
+  tables). senders_oi/receivers_oi restrict the merge for "expression"/"celltype_DE";
+  they are invalid for "group_DE" since that table has no cluster_id.
+parameters:
+- name: table_obj
+  type: pd.DataFrame
+  required: true
+  default: null
+- name: table_type
+  type: str
+  required: false
+  default: expression
+  description: One of "expression", "celltype_DE", "group_DE".
+- name: lr_network
+  type: pd.DataFrame
+  required: false
+  default: null
+  description: Required in practice despite the None default.
+- name: senders_oi
+  type: Sequence[str]
+  required: false
+  default: null
+- name: receivers_oi
+  type: Sequence[str]
+  required: false
+  default: null
+mutates: 'execution_class=pure_function; inputs only read; returns_kind=new_object'
+returns: A new merged, sorted, deduplicated pd.DataFrame joining ligand and receptor sides of table_obj via lr_network.
+requires:
+- result.lr_network
+writes:
+- result.ic_table
+examples:
+- process_table_to_ic(table_obj=de_table, table_type="celltype_DE", lr_network=lr_network,
+  senders_oi=senders_oi, receivers_oi=receivers_oi)
+failure_fixes:
+- when: lr_network is None.
+  suggest:
+  - Raises ValueError "lr_network must be provided."
+- when: table_type is not "expression"/"celltype_DE"/"group_DE".
+  suggest:
+  - Raises ValueError "table_type must be...".
+- when: table_type="group_DE" with senders_oi or receivers_oi set.
+  suggest:
+  - Raises ValueError ("senders_oi is given" / "receivers_oi is given") —
+    omit senders_oi/receivers_oi for group_DE tables.
+- when: table_type is "expression"/"celltype_DE" but senders_oi/receivers_oi is missing or given inconsistently.
+  suggest:
+  - Emits a UserWarning rather than raising — pass senders_oi/receivers_oi
+    consistently for these table types.
+related:
+- nichenetr.calculate_de
+- nichenetr.get_exprs_avg
+- nichenetr.generate_info_tables
+- nichenetr.generate_prioritization_tables

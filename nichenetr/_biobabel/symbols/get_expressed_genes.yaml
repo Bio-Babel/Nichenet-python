@@ -1,0 +1,59 @@
+id: nichenetr.get_expressed_genes
+import_path: nichenetr.symbols.get_expressed_genes
+kind: function
+signature: 'get_expressed_genes(adata: ''ad.AnnData'', celltype_col: ''str'', celltype:
+  ''str'', pct: ''float'' = 0.10, assay_oi: ''Optional[str]'' = None) -> ''list[str]'''
+purpose: Return genes expressed in at least pct fraction of cells of one cell type.
+description: >-
+  Python equivalent of R nichenetr's get_expressed_genes (which operates on
+  Seurat objects). Subsets adata to cells where adata.obs[celltype_col] ==
+  celltype, reads expression from adata.layers[assay_oi] if assay_oi is
+  given, else adata.X (dense or sparse), and returns the gene names (from
+  adata.var_names) for which the fraction of cells with expression > 0 is
+  >= pct.
+parameters:
+- name: adata
+  type: ad.AnnData
+  required: true
+  default: null
+  description: Cells x genes AnnData; not mutated (subsetting produces a view/copy).
+- name: celltype_col
+  type: str
+  required: true
+  default: null
+  description: Column in adata.obs holding cell type labels.
+- name: celltype
+  type: str
+  required: true
+  default: null
+  description: The cell type label to select; must be present in adata.obs[celltype_col].
+- name: pct
+  type: float
+  required: false
+  default: 0.10
+  description: Minimum fraction of selected cells in which a gene must have expression > 0.
+- name: assay_oi
+  type: str
+  required: false
+  default: null
+  description: Name of a layer in adata.layers to read expression from; defaults to adata.X.
+mutates: 'execution_class=pure_function; adata is only read/subset (no in-place
+  write to obs/var/X); returns_kind=new_object'
+returns: A list[str] of gene names passing the expression-fraction threshold.
+requires: []
+writes:
+- result.expressed_genes
+examples:
+- 'get_expressed_genes(adata, celltype_col="celltype", celltype="CAF", pct=0.10)'
+failure_fixes:
+- when: celltype_col is not a column of adata.obs.
+  suggest:
+  - Raises KeyError mentioning "not found in adata.obs" — pass a valid obs column name.
+- when: celltype is not one of the values in adata.obs[celltype_col].
+  suggest:
+  - Raises ValueError mentioning "not present" — check the exact cell type labels
+    with adata.obs[celltype_col].unique().
+related:
+- nichenetr.alias_to_symbol_anndata
+- nichenetr.assign_ligands_to_celltype
+- nichenetr.predict_ligand_activities

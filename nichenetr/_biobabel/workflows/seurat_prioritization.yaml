@@ -1,0 +1,83 @@
+id: nichenetr.seurat_prioritization
+title: Prioritize sender-receiver ligand-receptor pairs (AnnData)
+description: >-
+  Extends the ligand-activity recipe (nichenetr.seurat_ligand_activity) by
+  combining ligand activity with per-cell-type differential expression,
+  expression specificity, and (for a case/control design) condition
+  specificity into one prioritization_score per sender-ligand-receiver-receptor
+  interaction, across one or more receiver cell types. There are two
+  equivalent paths to the info tables: the one-call generate_info_tables, or
+  calculate_de + get_exprs_avg + process_table_to_ic run manually.
+task_tags:
+- ligand-prioritization
+- differential-expression
+- cell-cell-communication
+when_to_use:
+- A ranked, quantitative table of specific ligand-receptor PAIRS is needed
+  (not just a ranked ligand list), combining multiple lines of evidence
+  across one or more sender/receiver combinations.
+when_not_to_use:
+- Only a ranked ligand list is needed — use nichenetr.seurat_ligand_activity,
+  which is simpler and does not require the full info-table machinery.
+inputs:
+- name: adata
+  kind: AnnData
+  description: Same contract as nichenetr.seurat_ligand_activity (cell-type column, two-level condition column, canonicalized gene symbols).
+- name: celltype_col
+  kind: str
+- name: senders_oi
+  kind: list[str]
+- name: receivers_oi
+  kind: list[str]
+- name: condition_col
+  kind: str
+- name: condition_oi
+  kind: str
+- name: condition_ref
+  kind: str
+- name: scenario
+  kind: str
+  description: One of "case_control" or "one_condition".
+- name: lr_network
+  kind: DataFrame
+  description: Output of nichenetr.load_lr_network for the organism used.
+- name: ligand_activities
+  kind: DataFrame
+  description: Output of nichenetr.predict_ligand_activities from the nichenetr.seurat_ligand_activity workflow, over the same receivers_oi.
+outputs:
+- 'prioritization_table: ranked ligand-receptor pair table with prioritization_score/prioritization_rank (result.prioritization_table).'
+steps:
+- symbol: nichenetr.generate_info_tables
+  purpose: Compute per-cell-type DE, expression, and (case_control) condition DE, each joined to the LR network.
+  args:
+    adata: $inputs.adata
+    celltype_col: $inputs.celltype_col
+    senders_oi: $inputs.senders_oi
+    receivers_oi: $inputs.receivers_oi
+    lr_network: $inputs.lr_network
+    condition_col: $inputs.condition_col
+    condition_oi: $inputs.condition_oi
+    condition_ref: $inputs.condition_ref
+    scenario: $inputs.scenario
+  notes:
+  - 'Manual alternative: calculate_de(table_type="celltype_DE") + get_exprs_avg(table_type="expression")
+    + process_table_to_ic for each, plus a condition-level DE + process_table_to_ic(table_type="group_DE")
+    for case_control — used instead of this one call when finer control over
+    each table is needed.'
+- symbol: nichenetr.generate_prioritization_tables
+  purpose: Combine the info tables and ligand_activities into one ranked prioritization table.
+  args:
+    sender_receiver_info: $steps.generate_info_tables.output
+    sender_receiver_de: $steps.generate_info_tables.output
+    ligand_activities: $inputs.ligand_activities
+    lr_condition_de: $steps.generate_info_tables.output
+    scenario: $inputs.scenario
+- symbol: nichenetr.make_mushroom_plot
+  purpose: Visualize the top prioritized ligand-receptor pairs as a dual-semicircle dot plot.
+  args:
+    prioritization_table: $steps.generate_prioritization_tables.output
+  notes:
+  - 'Alternative visualization: make_circos_lr(prioritized_tbl, colors_sender,
+    colors_receiver) for a chord-diagram view of the same table.'
+templates:
+- nichenetr.seurat_prioritization_template

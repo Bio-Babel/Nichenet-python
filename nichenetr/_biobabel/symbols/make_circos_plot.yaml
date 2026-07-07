@@ -1,0 +1,48 @@
+id: nichenetr.make_circos_plot
+import_path: nichenetr.visualization.make_circos_plot
+kind: function
+signature: 'make_circos_plot(vis_circos_obj: ''dict'', transparency: ''bool'' = False,
+  *, ax=None, show: ''bool'' = False, figsize=None) -> ''matplotlib.figure.Figure'''
+purpose: Render a ligand-to-target circos/chord diagram from a prepared visualization dict.
+description: >-
+  Requires vis_circos_obj to contain keys links_circle, ligand_colors, order,
+  gaps (the output of prepare_circos_visualization). Uses pycirclize.Circos
+  if the optional pycirclize package is installed, otherwise falls back to a
+  matplotlib-only arc diagram.
+parameters:
+- name: vis_circos_obj
+  type: dict
+  required: true
+  default: null
+  description: Output of prepare_circos_visualization.
+- name: transparency
+  type: bool
+  required: false
+  default: false
+- name: ax
+  type: matplotlib.axes.Axes
+  required: false
+  default: null
+- name: show
+  type: bool
+  required: false
+  default: false
+- name: figsize
+  type: tuple
+  required: false
+  default: null
+mutates: 'execution_class=pure_function; vis_circos_obj is only read; returns_kind=new_object'
+returns: A matplotlib.figure.Figure containing the rendered circos/chord diagram.
+requires:
+- result.circos_vis
+writes: []
+examples:
+- make_circos_plot(vis_circos_obj=vis_circos_obj, transparency=True)
+failure_fixes:
+- when: vis_circos_obj is missing one of links_circle/ligand_colors/order/gaps.
+  suggest:
+  - Raises ValueError "must contain keys" — pass the dict returned by
+    prepare_circos_visualization unchanged.
+related:
+- nichenetr.prepare_circos_visualization
+- nichenetr.get_ligand_target_links_oi

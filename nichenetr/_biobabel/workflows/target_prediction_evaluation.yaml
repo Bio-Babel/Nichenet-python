@@ -1,0 +1,86 @@
+id: nichenetr.target_prediction_evaluation
+title: Cross-validate how well top ligands predict gene-set membership
+description: >-
+  Quantitatively validates a prior ligand-activity result by cross-validated
+  random-forest classification of gene-set membership from the top-ranked
+  ligands' regulatory-potential columns, then reports standard classification
+  metrics, the fraction of gene-set genes among top-predicted genes, a
+  Fisher's-exact enrichment p-value, and the consistently well-predicted
+  target genes across CV rounds.
+task_tags:
+- model-evaluation
+- ligand-prioritization
+when_to_use:
+- A prior ligand-activity run (nichenetr.seurat_ligand_activity or
+  nichenetr.geneset_ligand_activity_visualization) has produced top-ranked
+  ligands and a geneset_oi/background_expressed_genes pair, and the
+  reliability of the ligand-target prediction needs to be quantified.
+when_not_to_use:
+- No ligand-activity result exists yet — run one of the ligand-activity
+  workflows first to obtain geneset_oi, background_expressed_genes, and
+  top-ranked ligands.
+inputs:
+- name: geneset_oi
+  kind: list[str]
+  description: Same gene set of interest used in the prior ligand-activity run.
+- name: background_expressed_genes
+  kind: list[str]
+  description: Same background gene population used in the prior ligand-activity run.
+- name: ligands_oi
+  kind: list[str]
+  description: Top-ranked ligands from nichenetr.predict_ligand_activities to use as classifier features.
+- name: ligand_target_matrix
+  kind: NamedMatrix
+  description: Output of nichenetr.load_ligand_target_matrix, same organism as the prior ligand-activity run.
+- name: folds
+  kind: int
+  description: Number of cross-validation folds per round.
+- name: num_rounds
+  kind: int
+  description: Number of independent CV rounds (each with a different round_num seed) to run and merge.
+outputs:
+- 'classification_metrics: per-round AUROC/AUPR/Pearson summary of prediction quality (result.classification_metrics).'
+- 'top_predicted_genes: genes consistently top-predicted across CV rounds, merged on gene (result.top_predicted_genes).'
+steps:
+- symbol: nichenetr.assess_rf_class_probabilities
+  purpose: Cross-validated random-forest prediction of gene-set membership from ligand-target regulatory potentials.
+  args:
+    round_num: $inputs.num_rounds
+    folds: $inputs.folds
+    geneset: $inputs.geneset_oi
+    background_expressed_genes: $inputs.background_expressed_genes
+    ligands_oi: $inputs.ligands_oi
+    ligand_target_matrix: $inputs.ligand_target_matrix
+  notes:
+  - Run once per round_num from 1 to num_rounds; results below are computed
+    per round and then merged.
+- symbol: nichenetr.classification_evaluation_continuous_pred_wrapper
+  purpose: Summarize this round's predictions into AUROC/AUPR/Pearson metrics.
+  args:
+    response_prediction_df: $steps.assess_rf_class_probabilities.output
+- symbol: nichenetr.calculate_fraction_top_predicted
+  purpose: Compute the fraction of gene-set vs. background genes in the top-predicted quantile.
+  args:
+    round_num: $inputs.num_rounds
+    response_prediction_df: $steps.assess_rf_class_probabilities.output
+    ligands_oi: $inputs.ligands_oi
+    ligand_target_matrix: $inputs.ligand_target_matrix
+- symbol: nichenetr.calculate_fraction_top_predicted_fisher
+  purpose: One-sided Fisher exact test for enrichment of gene-set genes among top-predicted genes.
+  args:
+    round_num: $inputs.num_rounds
+    response_prediction_df: $steps.assess_rf_class_probabilities.output
+    ligands_oi: $inputs.ligands_oi
+    ligand_target_matrix: $inputs.ligand_target_matrix
+- symbol: nichenetr.get_top_predicted_genes
+  purpose: List this round's top-predicted genes flagged with true gene-set membership.
+  args:
+    round_num: $inputs.num_rounds
+    response_prediction_df: $steps.assess_rf_class_probabilities.output
+    ligands_oi: $inputs.ligands_oi
+    ligand_target_matrix: $inputs.ligand_target_matrix
+  notes:
+  - Merge the per-round outputs of this step on "gene" across all rounds to
+    see which genes are consistently top-predicted.
+templates:
+- nichenetr.target_prediction_evaluation_template

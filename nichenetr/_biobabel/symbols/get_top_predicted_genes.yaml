@@ -1,0 +1,68 @@
+id: nichenetr.get_top_predicted_genes
+import_path: nichenetr.evaluation.get_top_predicted_genes
+kind: function
+signature: 'get_top_predicted_genes(round_num: ''int'', response_prediction_df: ''pd.DataFrame'',
+  ligands_oi: ''List[str]'', ligand_target_matrix: ''NamedMatrix'', classification_model:
+  ''Optional[Any]'' = None, n: ''int'' = 250, quantile_cutoff: ''float'' = 0.95) ->
+  ''pd.DataFrame'''
+purpose: List the top-predicted genes (by quantile cutoff, capped at n), flagged with their true gene-set membership.
+description: >-
+  Uses the same sort/threshold logic as calculate_fraction_top_predicted to
+  select genes with prediction >= quantile(prediction, quantile_cutoff),
+  then takes at most n of them (highest prediction first). Adds a "gene",
+  "true_target" (bool cast of response), and a
+  f"predicted_top_target_round{round_num}" boolean column (always True for
+  the returned rows) so that multiple rounds' outputs can later be merged on
+  "gene" to see which genes are consistently top-predicted.
+  ligands_oi/ligand_target_matrix/classification_model are accepted for API
+  symmetry but not used in the computation; round_num is used only to name
+  the flag column.
+parameters:
+- name: round_num
+  type: int
+  required: true
+  default: null
+  description: Used to name the output flag column f"predicted_top_target_round{round_num}".
+- name: response_prediction_df
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Table with "gene", "prediction", and "response" columns, typically the output of assess_rf_class_probabilities.
+- name: ligands_oi
+  type: List[str]
+  required: true
+  default: null
+  description: Accepted for API symmetry; not used in the computation.
+- name: ligand_target_matrix
+  type: NamedMatrix
+  required: true
+  default: null
+  description: Accepted for API symmetry; not used in the computation.
+- name: classification_model
+  type: Any
+  required: false
+  default: null
+  description: Reserved for future extensions; currently unused.
+- name: n
+  type: int
+  required: false
+  default: 250
+- name: quantile_cutoff
+  type: float
+  required: false
+  default: 0.95
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: >-
+  A new pd.DataFrame with columns [gene, true_target,
+  predicted_top_target_round{round_num}], at most n rows.
+requires:
+- result.rf_predictions
+writes:
+- result.top_predicted_genes
+examples:
+- 'get_top_predicted_genes(round_num=1, response_prediction_df=rf_prediction_df,
+  ligands_oi=best_upstream_ligands, ligand_target_matrix=ligand_target_matrix, n=250)'
+failure_fixes: []
+related:
+- nichenetr.assess_rf_class_probabilities
+- nichenetr.calculate_fraction_top_predicted

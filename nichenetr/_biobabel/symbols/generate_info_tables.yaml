@@ -1,0 +1,100 @@
+id: nichenetr.generate_info_tables
+import_path: nichenetr.prioritization.generate_info_tables
+kind: function
+signature: 'generate_info_tables(adata: ''ad.AnnData'', celltype_col: ''str'', senders_oi:
+  ''Sequence[str]'', receivers_oi: ''Sequence[str]'', lr_network: ''pd.DataFrame'',
+  condition_col: ''Optional[str]'' = None, condition_oi: ''Optional[str]'' = None,
+  condition_ref: ''Optional[str]'' = None, scenario: ''str'' = "case_control", assay_oi:
+  ''Optional[str]'' = None) -> ''Dict[str, Optional[pd.DataFrame]]'''
+purpose: Orchestrate DE, expression, and (optionally) condition-DE computation and join each with the LR network for prioritization.
+description: >-
+  Internally calls calculate_de and get_exprs_avg on adata, and (when
+  scenario="case_control") a condition-level DE via
+  scanpy.tl.rank_genes_groups; then passes each resulting table through
+  process_table_to_ic with the appropriate table_type. Does not mutate the
+  caller's adata (uses internal copies throughout). This is the one-call
+  equivalent of running calculate_de + get_exprs_avg + process_table_to_ic
+  manually.
+parameters:
+- name: adata
+  type: ad.AnnData
+  required: true
+  default: null
+- name: celltype_col
+  type: str
+  required: true
+  default: null
+- name: senders_oi
+  type: Sequence[str]
+  required: true
+  default: null
+- name: receivers_oi
+  type: Sequence[str]
+  required: true
+  default: null
+- name: lr_network
+  type: pd.DataFrame
+  required: true
+  default: null
+- name: condition_col
+  type: str
+  required: false
+  default: null
+- name: condition_oi
+  type: str
+  required: false
+  default: null
+- name: condition_ref
+  type: str
+  required: false
+  default: null
+- name: scenario
+  type: str
+  required: false
+  default: case_control
+  description: One of "case_control" or "one_condition".
+- name: assay_oi
+  type: str
+  required: false
+  default: null
+mutates: 'execution_class=pure_function; internal adata copies only, caller''s
+  adata never mutated; returns_kind=new_object'
+returns: >-
+  A new dict with keys "sender_receiver_de", "sender_receiver_info",
+  "lr_condition_de" (the last is None when scenario="one_condition").
+requires:
+- result.lr_network
+writes:
+- result.sender_receiver_de
+- result.sender_receiver_info
+- result.lr_condition_de
+examples:
+- 'generate_info_tables(adata, celltype_col="celltype", senders_oi=senders_oi,
+  receivers_oi=receivers_oi, lr_network=lr_network, condition_col="tumor", condition_oi="High",
+  condition_ref="Low", scenario="case_control")'
+failure_fixes:
+- when: celltype_col is not a column of adata.obs.
+  suggest:
+  - Raises KeyError "not found in adata.obs."
+- when: Only some of condition_col/condition_oi/condition_ref are given.
+  suggest:
+  - Raises ValueError "all None or all provided." — pass all three or none.
+- when: None of condition_col/condition_oi/condition_ref given but scenario="case_control".
+  suggest:
+  - Raises ValueError about condition_* arguments not being provided — either
+    pass all three condition arguments or set scenario="one_condition".
+- when: scenario is not "case_control"/"one_condition".
+  suggest:
+  - Raises ValueError "scenario must be...".
+- when: A value in senders_oi/receivers_oi is not present in adata.obs[celltype_col].
+  suggest:
+  - Raises ValueError ("Senders not in data" / "Receivers not in data") —
+    check adata.obs[celltype_col].unique().
+- when: scenario="one_condition" while condition_* arguments are given.
+  suggest:
+  - Emits a UserWarning — the condition arguments are ignored for one_condition scenario.
+related:
+- nichenetr.calculate_de
+- nichenetr.get_exprs_avg
+- nichenetr.process_table_to_ic
+- nichenetr.generate_prioritization_tables

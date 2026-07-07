@@ -1,0 +1,76 @@
+id: nichenetr.get_ligand_signaling_path
+import_path: nichenetr.networks.get_ligand_signaling_path
+kind: function
+signature: 'get_ligand_signaling_path(ligand_tf_matrix: ''NamedMatrix'', ligands_all:
+  ''List[str]'', targets_all: ''List[str]'', top_n_regulators: ''int'' = 4, weighted_networks:
+  ''Optional[Dict[str, pd.DataFrame]]'' = None, ligands_position: ''str'' = "cols",
+  minmax_scaling: ''bool'' = False) -> ''Dict[str, pd.DataFrame]'''
+purpose: Trace the intermediate signaling/regulatory path connecting ligands to target genes.
+description: >-
+  For each ligand-target pair, selects the top_n_regulators transcription
+  factors by combined ligand-to-TF and TF-to-target weight (from
+  ligand_tf_matrix and weighted_networks["gr"]), then finds shortest
+  weighted paths (networkx Dijkstra, edge weight = 1/original weight) from
+  ligands to those TFs through weighted_networks["lr_sig"]. Extracts the
+  signaling ("sig") and gene-regulatory ("gr") edges actually used by those
+  paths. Optionally min-max rescales edge weights to [0.75, 1.75] for
+  plotting.
+parameters:
+- name: ligand_tf_matrix
+  type: NamedMatrix
+  required: true
+  default: null
+- name: ligands_all
+  type: List[str]
+  required: true
+  default: null
+- name: targets_all
+  type: List[str]
+  required: true
+  default: null
+- name: top_n_regulators
+  type: int
+  required: false
+  default: 4
+- name: weighted_networks
+  type: Dict[str, pd.DataFrame]
+  required: false
+  default: null
+  description: Must contain "lr_sig" and "gr" DataFrames with a "weight" column; required in practice despite the None default.
+- name: ligands_position
+  type: str
+  required: false
+  default: cols
+- name: minmax_scaling
+  type: bool
+  required: false
+  default: false
+mutates: 'execution_class=pure_function; inputs only read; returns_kind=new_object'
+returns: 'A new dict {"sig": pd.DataFrame[from,to,weight], "gr": pd.DataFrame[from,to,weight]}, both index-reset.'
+requires:
+- result.ligand_tf_matrix
+- result.weighted_networks
+writes:
+- result.signaling_graph
+examples:
+- 'get_ligand_signaling_path(ligand_tf_matrix=ligand_tf_matrix, ligands_all=["TGFB1"],
+  targets_all=["SERPINE1"], weighted_networks=weighted_networks, top_n_regulators=4)'
+failure_fixes:
+- when: weighted_networks is None or not a dict, or missing/wrong-typed "lr_sig"/"gr" keys.
+  suggest:
+  - Raises ValueError ("weighted_networks must be provided" / "must be a dict"
+    / "must be a DataFrame") — pass the dict returned by load_weighted_networks.
+- when: ligands_position is not "cols" or "rows".
+  suggest:
+  - Raises ValueError mentioning "ligands_position".
+- when: A ligand in ligands_all is not in ligand_tf_matrix, or a target in targets_all is not reachable via weighted_networks["gr"]["to"].
+  suggest:
+  - Raises ValueError ("Ligands not found..." / "Target genes not in...") —
+    verify gene symbols/organism match the loaded networks.
+- when: top_n_regulators <= 0.
+  suggest:
+  - Raises ValueError "top_n_regulators must be a number > 0".
+related:
+- nichenetr.format_signaling_graph
+- nichenetr.infer_supporting_datasources
+- nichenetr.load_ligand_tf_matrix

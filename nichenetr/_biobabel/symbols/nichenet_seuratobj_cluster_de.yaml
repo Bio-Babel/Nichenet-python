@@ -1,0 +1,142 @@
+id: nichenetr.nichenet_seuratobj_cluster_de
+import_path: nichenetr.wrappers.nichenet_seuratobj_cluster_de
+kind: function
+signature: 'nichenet_seuratobj_cluster_de(receiver_affected: ''Union[str, Sequence[str]]'',
+  receiver_reference: ''Union[str, Sequence[str]]'', adata: ''ad.AnnData'', condition_col:
+  ''str'', condition_oi: ''str'', condition_ref: ''str'', sender: ''Union[str, Sequence[str]]''
+  = "all", celltype_col: ''Optional[str]'' = None, ligand_target_matrix: ''Optional[Any]''
+  = None, lr_network: ''Optional[pd.DataFrame]'' = None, weighted_networks: ''Optional[Dict[str,
+  pd.DataFrame]]'' = None, expression_pct: ''float'' = 0.10, lfc_cutoff: ''float''
+  = 0.25, top_n_ligands: ''int'' = 30, top_n_targets: ''int'' = 200, cutoff_visualization:
+  ''float'' = 0.33, geneset: ''str'' = "DE", filter_top_ligands: ''bool'' = True,
+  assay_oi: ''Optional[str]'' = None, verbose: ''bool'' = True) -> ''Dict[str, Any]'''
+purpose: Run the full NicheNet pipeline comparing two different receiver cell populations instead of two conditions of the same population.
+description: >-
+  Python equivalent of R nichenetr's nichenet_seuratobj_aggregate_cluster_de.
+  Same internal recipe and return-dict shape as nichenet_seuratobj_aggregate,
+  but the "geneset of interest" comes from DE between receiver_affected cells
+  (restricted to condition_oi) and receiver_reference cells (restricted to
+  condition_ref) rather than from DE between two conditions within one
+  receiver population. Never mutates the caller's adata or prior-network
+  arguments (internal copies throughout).
+parameters:
+- name: receiver_affected
+  type: Union[str, Sequence[str]]
+  required: true
+  default: null
+  description: Cell type(s) forming the "affected" receiver group, subset to condition_oi.
+- name: receiver_reference
+  type: Union[str, Sequence[str]]
+  required: true
+  default: null
+  description: Cell type(s) forming the "reference" receiver group, subset to condition_ref.
+- name: adata
+  type: ad.AnnData
+  required: true
+  default: null
+- name: condition_col
+  type: str
+  required: true
+  default: null
+- name: condition_oi
+  type: str
+  required: true
+  default: null
+- name: condition_ref
+  type: str
+  required: true
+  default: null
+- name: sender
+  type: Union[str, Sequence[str]]
+  required: false
+  default: all
+- name: celltype_col
+  type: str
+  required: false
+  default: null
+- name: ligand_target_matrix
+  type: Any
+  required: false
+  default: null
+- name: lr_network
+  type: pd.DataFrame
+  required: false
+  default: null
+- name: weighted_networks
+  type: Dict[str, pd.DataFrame]
+  required: false
+  default: null
+- name: expression_pct
+  type: float
+  required: false
+  default: 0.10
+- name: lfc_cutoff
+  type: float
+  required: false
+  default: 0.25
+- name: top_n_ligands
+  type: int
+  required: false
+  default: 30
+- name: top_n_targets
+  type: int
+  required: false
+  default: 200
+- name: cutoff_visualization
+  type: float
+  required: false
+  default: 0.33
+- name: geneset
+  type: str
+  required: false
+  default: DE
+- name: filter_top_ligands
+  type: bool
+  required: false
+  default: true
+- name: assay_oi
+  type: str
+  required: false
+  default: null
+- name: verbose
+  type: bool
+  required: false
+  default: true
+mutates: 'execution_class=pure_function; adata and network arguments are copied
+  internally, never mutated; returns_kind=new_object'
+returns: >-
+  A dict with the same structure as nichenet_seuratobj_aggregate's return
+  value (ligand_activities, top_ligands, top_targets, top_receptors,
+  ligand_target_df, ligand_receptor_df, heatmap figures, geneset_oi,
+  background_expressed_genes).
+requires: []
+writes:
+- result.nichenet_ligand_activities
+- result.nichenet_top_ligands
+- result.nichenet_ligand_target_df
+- result.nichenet_ligand_receptor_df
+- result.nichenet_geneset_oi
+- result.nichenet_background_expressed_genes
+examples:
+- 'nichenet_seuratobj_cluster_de(receiver_affected="Malignant_High", receiver_reference="Malignant_Low",
+  adata=adata, condition_col="tumor", condition_oi="High", condition_ref="Low",
+  celltype_col="celltype")'
+failure_fixes:
+- when: geneset is not "DE"/"up"/"down".
+  suggest:
+  - Raises ValueError "geneset must be 'DE', 'up', or 'down'."
+- when: celltype_col is not provided.
+  suggest:
+  - Raises ValueError "celltype_col must be provided..."
+- when: No genes are differentially expressed between receiver_affected and receiver_reference.
+  suggest:
+  - Raises ValueError "No genes were differentially expressed." — relax
+    lfc_cutoff/expression_pct.
+- when: No ligands are expressed in sender cells, or no receptors are expressed in receiver cells.
+  suggest:
+  - Raises ValueError ("No ligands expressed in sender cells." / "No receptors
+    expressed in receiver cells." / "No potentially active ligands.").
+related:
+- nichenetr.nichenet_seuratobj_aggregate
+- nichenetr.predict_ligand_activities
+- nichenetr.get_weighted_ligand_target_links

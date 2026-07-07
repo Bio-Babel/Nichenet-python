@@ -1,0 +1,62 @@
+id: nichenetr.single_cell_ligand_activity
+title: Predict per-cell ligand activity and correlate with a phenotype score
+description: >-
+  Predicts ligand activity for individual cells (rather than a cell
+  population), normalizes the per-cell scores for cross-cell comparability,
+  and correlates each ligand's normalized activity with a cell-level
+  phenotype score (e.g. expression of a marker gene) to rank ligands by
+  association with that phenotype at single-cell resolution.
+task_tags:
+- ligand-prioritization
+- single-cell-transcriptomics
+when_to_use:
+- The unit of analysis is the individual cell, not a cell population, and
+  the goal is to correlate ligand activity with a continuous per-cell
+  phenotype score.
+when_not_to_use:
+- The analysis is at the cell-population level (compare two conditions or
+  cell types) — use nichenetr.seurat_ligand_activity instead.
+inputs:
+- name: raw_expression_matrix
+  kind: DataFrame
+  description: Cells x genes raw expression matrix (e.g. from load_hnscc_expression()["expression"] converted to a DataFrame).
+- name: cell_ids
+  kind: list[str]
+  description: The subset of cells to score (single-cell scoring is computationally heavier than population-level scoring).
+- name: ligand_target_matrix
+  kind: NamedMatrix
+  description: Output of nichenetr.load_ligand_target_matrix.
+- name: potential_ligands
+  kind: list[str]
+  description: Candidate ligand genes to score, restricted to ligand_target_matrix.colnames.
+- name: cell_scores_tbl
+  kind: DataFrame
+  description: >-
+    Table with "cell" and "score" columns holding a per-cell phenotype score
+    (e.g. expression of a marker gene such as TGFBI), computed externally
+    from raw_expression_matrix.
+outputs:
+- 'ligand_score_regression: per-ligand correlation/regression table against cell_scores_tbl (result.ligand_score_regression).'
+steps:
+- symbol: nichenetr.scale_quantile
+  purpose: Quantile-scale the raw expression matrix to [0, 1] before per-cell gene-set derivation.
+  args:
+    x: $inputs.raw_expression_matrix
+- symbol: nichenetr.predict_single_cell_ligand_activities
+  purpose: Score ligand activity independently for each cell in cell_ids.
+  args:
+    cell_ids: $inputs.cell_ids
+    expression_scaled: $steps.scale_quantile.output
+    ligand_target_matrix: $inputs.ligand_target_matrix
+    potential_ligands: $inputs.potential_ligands
+- symbol: nichenetr.normalize_single_cell_ligand_activities
+  purpose: Modified-z-score normalize per-cell AUPR scores for cross-cell comparison.
+  args:
+    ligand_activities: $steps.predict_single_cell_ligand_activities.output
+- symbol: nichenetr.single_ligand_activity_score_regression
+  purpose: Correlate each ligand's normalized per-cell activity with the phenotype score.
+  args:
+    ligand_activities: $steps.normalize_single_cell_ligand_activities.output
+    scores_tbl: $inputs.cell_scores_tbl
+templates:
+- nichenetr.single_cell_ligand_activity_template

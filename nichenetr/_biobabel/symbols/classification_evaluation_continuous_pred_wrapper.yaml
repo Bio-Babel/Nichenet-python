@@ -1,0 +1,37 @@
+id: nichenetr.classification_evaluation_continuous_pred_wrapper
+import_path: nichenetr.evaluation.classification_evaluation_continuous_pred_wrapper
+kind: function
+signature: 'classification_evaluation_continuous_pred_wrapper(response_prediction_df:
+  ''pd.DataFrame'') -> ''pd.DataFrame'''
+purpose: Summarize a continuous prediction/binary-response table into standard classification metrics.
+description: >-
+  Requires columns "prediction" (float) and "response" (bool/0-1); an
+  optional "gene" column is ignored. Computes AUROC, AUPR, a
+  background-corrected AUPR, Pearson and Spearman correlation (each with a
+  -log10 p-value). Infinite values in "prediction" are replaced with
+  max(finite values) + 0.1 before scoring. Degenerate inputs (empty, or zero
+  variance in prediction/response) return a single all-NaN row instead of
+  raising.
+parameters:
+- name: response_prediction_df
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Table with "prediction" (float) and "response" (bool) columns, typically the output of assess_rf_class_probabilities.
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: >-
+  A new single-row pd.DataFrame with columns [auroc, aupr, aupr_corrected,
+  pearson, pearson_log_pval, spearman, spearman_log_pval].
+requires:
+- result.rf_predictions
+writes:
+- result.classification_metrics
+examples:
+- classification_evaluation_continuous_pred_wrapper(rf_prediction_df)
+failure_fixes:
+- when: response_prediction_df is empty, or "response"/"prediction" has zero variance.
+  suggest:
+  - No exception is raised; all metric columns are NaN in the single returned
+    row instead of an error.
+related:
+- nichenetr.assess_rf_class_probabilities

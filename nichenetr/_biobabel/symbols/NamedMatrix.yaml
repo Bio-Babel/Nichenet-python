@@ -1,0 +1,43 @@
+id: nichenetr.NamedMatrix
+import_path: nichenetr.NamedMatrix
+kind: class
+signature: 'NamedMatrix(data: ForwardRef(''scipy.sparse.csr_matrix''), rownames: ForwardRef(''list[str]''),
+  colnames: ForwardRef(''list[str]''))'
+purpose: An immutable, named sparse matrix (rows/columns carry gene/ligand names) used to represent NicheNet prior-model matrices.
+description: >-
+  A typing.NamedTuple with fields data (a scipy.sparse.csr_matrix), rownames
+  (list[str]), and colnames (list[str]). Because it is a NamedTuple it is
+  immutable — there is no in-place mutation API; "modifying" a NamedMatrix
+  means constructing a new one. Standard tuple access (nm.data, nm[0], etc.)
+  and unpacking work. It is the return type of load_ligand_target_matrix,
+  load_ligand_tf_matrix, and the "expression" field of load_hnscc_expression,
+  and is accepted (or, for ligand_target_matrix, also a plain pd.DataFrame)
+  as an input by predict_ligand_activities, get_weighted_ligand_target_links,
+  get_ligand_signaling_path, and the assess_rf_class_probabilities/
+  calculate_fraction_top_predicted* evaluation functions.
+parameters:
+- name: data
+  type: ForwardRef('scipy.sparse.csr_matrix')
+  required: true
+  default: null
+- name: rownames
+  type: ForwardRef('list[str]')
+  required: true
+  default: null
+- name: colnames
+  type: ForwardRef('list[str]')
+  required: true
+  default: null
+mutates: 'execution_class=value_object; immutable NamedTuple, no in-place mutation
+  possible; returns_kind=new_object'
+returns: ''
+requires: []
+writes: []
+examples:
+- 'NamedMatrix(data=scipy.sparse.csr_matrix(np.eye(3)), rownames=["g1", "g2", "g3"],
+  colnames=["L1", "L2", "L3"])'
+failure_fixes: []
+related:
+- nichenetr.load_ligand_target_matrix
+- nichenetr.load_ligand_tf_matrix
+- nichenetr.predict_ligand_activities

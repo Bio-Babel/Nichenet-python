@@ -1,0 +1,64 @@
+id: nichenetr.calculate_fraction_top_predicted
+import_path: nichenetr.evaluation.calculate_fraction_top_predicted
+kind: function
+signature: 'calculate_fraction_top_predicted(round_num: ''int'', response_prediction_df:
+  ''pd.DataFrame'', ligands_oi: ''List[str]'', ligand_target_matrix: ''NamedMatrix'',
+  classification_model: ''Optional[Any]'' = None, quantile_cutoff: ''float'' = 0.95)
+  -> ''pd.DataFrame'''
+purpose: Compute what fraction of gene-set genes vs. background genes fall in the top-predicted quantile.
+description: >-
+  Sorts response_prediction_df by "prediction" descending, takes
+  threshold = quantile(prediction, quantile_cutoff), and selects genes with
+  prediction >= threshold as "top predicted". Groups by "response" (gene-set
+  membership) to compute, for each group, the count of top-predicted genes
+  and the total count, then the fraction. round_num, ligands_oi,
+  ligand_target_matrix, and classification_model are accepted for API
+  symmetry with sibling evaluation functions but are not used in the
+  computation itself.
+parameters:
+- name: round_num
+  type: int
+  required: true
+  default: null
+  description: Accepted for API symmetry with assess_rf_class_probabilities; not used in the computation.
+- name: response_prediction_df
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Table with "prediction" and "response" columns, typically the output of assess_rf_class_probabilities.
+- name: ligands_oi
+  type: List[str]
+  required: true
+  default: null
+  description: Accepted for API symmetry; not used in the computation.
+- name: ligand_target_matrix
+  type: NamedMatrix
+  required: true
+  default: null
+  description: Accepted for API symmetry; not used in the computation.
+- name: classification_model
+  type: Any
+  required: false
+  default: null
+  description: Reserved for future extensions; currently unused.
+- name: quantile_cutoff
+  type: float
+  required: false
+  default: 0.95
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: >-
+  A new pd.DataFrame with columns [true_target, n, positive_prediction,
+  fraction_positive_predicted], one row per response group.
+requires:
+- result.rf_predictions
+writes:
+- result.top_predicted_fraction
+examples:
+- 'calculate_fraction_top_predicted(round_num=1, response_prediction_df=rf_prediction_df,
+  ligands_oi=best_upstream_ligands, ligand_target_matrix=ligand_target_matrix,
+  quantile_cutoff=0.95)'
+failure_fixes: []
+related:
+- nichenetr.assess_rf_class_probabilities
+- nichenetr.calculate_fraction_top_predicted_fisher
+- nichenetr.get_top_predicted_genes

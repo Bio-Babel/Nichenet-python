@@ -1,0 +1,27 @@
+id: nichenetr.load_pemt_signature
+import_path: nichenetr.load_pemt_signature
+kind: function
+signature: load_pemt_signature() -> 'list[str]'
+purpose: Load the bundled partial-EMT (pEMT) gene signature used as an example gene set of interest.
+description: >-
+  Resolves pemt_signature.txt via resolve_data_path (cached under
+  ~/.cache/nichenetr_py/, downloaded from Zenodo with SHA-256 verification
+  on a cache miss — a real network request in that case) and returns one
+  gene per non-blank line, stripped. Used as the "geneset" input to
+  predict_ligand_activities in the raw-expression-matrix tutorials.
+parameters: []
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A list[str] of gene symbols making up the pEMT signature.
+requires: []
+writes:
+- result.pemt_signature
+examples:
+- load_pemt_signature()
+failure_fixes:
+- when: No cached copy exists and there is no network access.
+  suggest:
+  - Raises an error from the underlying urllib download — pre-populate the
+    cache or mock nichenetr.datasets.resolve_data_path.
+related:
+- nichenetr.load_hnscc_expression
+- nichenetr.predict_ligand_activities

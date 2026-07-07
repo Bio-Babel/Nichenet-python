@@ -1,0 +1,46 @@
+id: nichenetr.get_weighted_ligand_receptor_links
+import_path: nichenetr.targets.get_weighted_ligand_receptor_links
+kind: function
+signature: 'get_weighted_ligand_receptor_links(best_upstream_ligands: ''list[str]'',
+  expressed_receptors: ''list[str]'', lr_network: ''pd.DataFrame'', weighted_networks_lr_sig:
+  ''pd.DataFrame'') -> ''pd.DataFrame'''
+purpose: Build the weighted ligand-receptor link table restricted to top ligands and expressed receptors.
+description: >-
+  Inner-joins weighted_networks_lr_sig (from,to,weight) with lr_network
+  (from,to) to keep only pairs present in the prior LR network, then filters
+  to ligands in best_upstream_ligands and receptors in expressed_receptors.
+parameters:
+- name: best_upstream_ligands
+  type: list[str]
+  required: true
+  default: null
+  description: Top-ranked ligands, typically the top test_ligand values from predict_ligand_activities.
+- name: expressed_receptors
+  type: list[str]
+  required: true
+  default: null
+  description: Receptor genes expressed in the receiver cell type(s), e.g. from get_expressed_genes.
+- name: lr_network
+  type: pd.DataFrame
+  required: true
+  default: null
+- name: weighted_networks_lr_sig
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: The "lr_sig" table from load_weighted_networks.
+mutates: 'execution_class=pure_function; inputs only read; returns_kind=new_object'
+returns: A new pd.DataFrame with columns [from, to, weight], index reset; empty if no overlap.
+requires:
+- result.lr_network
+- result.weighted_networks
+writes:
+- result.ligand_receptor_links
+examples:
+- 'get_weighted_ligand_receptor_links(best_upstream_ligands=best_upstream_ligands,
+  expressed_receptors=expressed_receptors, lr_network=lr_network, weighted_networks_lr_sig=weighted_networks["lr_sig"])'
+failure_fixes: []
+related:
+- nichenetr.prepare_ligand_receptor_visualization
+- nichenetr.load_lr_network
+- nichenetr.load_weighted_networks

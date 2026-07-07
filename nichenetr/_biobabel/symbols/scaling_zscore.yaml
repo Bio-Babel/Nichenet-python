@@ -1,0 +1,29 @@
+id: nichenetr.scaling_zscore
+import_path: nichenetr.scaling_zscore
+kind: function
+signature: 'scaling_zscore(x: ''np.ndarray'') -> ''np.ndarray'''
+purpose: Z-score normalize a numeric array (R nichenetr scaling_zscore port).
+description: >-
+  Converts x to float64 and returns (x - mean) / std using the sample standard
+  deviation (ddof=1, matching R's sd()). If x has a single element, returns
+  0.0. If the standard deviation is exactly 0 (all values equal), returns the
+  mean-centered array without dividing, instead of raising or producing Inf/NaN.
+parameters:
+- name: x
+  type: np.ndarray
+  required: true
+  default: null
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A new np.ndarray of the same shape as x, z-score normalized.
+requires: []
+writes: []
+examples:
+- 'scaling_zscore(np.array([1.0, 2.0, 3.0, 4.0]))'
+failure_fixes:
+- when: All values in x are identical (zero variance).
+  suggest:
+  - No exception is raised; the result is the mean-centered array (all zeros)
+    instead of a divide-by-zero error.
+related:
+- nichenetr.scaling_modified_zscore
+- nichenetr.scale_quantile

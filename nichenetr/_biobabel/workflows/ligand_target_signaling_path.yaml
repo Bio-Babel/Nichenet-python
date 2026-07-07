@@ -1,0 +1,78 @@
+id: nichenetr.ligand_target_signaling_path
+title: Trace the signaling path connecting a ligand to a target gene
+description: >-
+  Given specific ligand(s) and target gene(s) of interest — typically
+  identified from a prior ligand-activity analysis — traces the intermediate
+  signaling/gene-regulatory path connecting them through top transcription
+  factor regulators, formats the result as a node/edge graph for
+  visualization, and looks up which prior-knowledge source databases support
+  each retained edge.
+task_tags:
+- pathway-tracing
+- cell-cell-communication
+when_to_use:
+- A specific ligand-target pair (or small set) has already been identified
+  as interesting (e.g. from nichenetr.seurat_ligand_activity) and the
+  mechanistic path between them needs to be visualized or its evidence
+  audited.
+when_not_to_use:
+- No specific ligand/target pair has been chosen yet — run
+  nichenetr.seurat_ligand_activity or nichenetr.geneset_ligand_activity_visualization
+  first to identify candidates.
+inputs:
+- name: organism
+  kind: str
+  description: Organism for the loaded networks; note load_sig_network/load_gr_network are human-only.
+- name: ligands_all
+  kind: list[str]
+  description: Ligand(s) of interest to trace paths from.
+- name: targets_all
+  kind: list[str]
+  description: Target gene(s) of interest to trace paths to.
+- name: top_n_regulators
+  kind: int
+  description: Number of top transcription-factor regulators to consider per ligand-target pair.
+outputs:
+- 'signaling_graph_formatted: nodes/edges tables ready for networkx visualization (result.signaling_graph_formatted).'
+- 'datasource_table: table of which prior-knowledge sources support each retained edge (result.datasource_table).'
+steps:
+- symbol: nichenetr.load_ligand_tf_matrix
+  purpose: Load the ligand-to-transcription-factor prior matrix.
+  args: {}
+- symbol: nichenetr.load_weighted_networks
+  purpose: Load the weighted signaling and gene-regulatory networks for organism.
+  args:
+    organism: $inputs.organism
+- symbol: nichenetr.load_lr_network
+  purpose: Load the prior ligand-receptor network for organism.
+  args:
+    organism: $inputs.organism
+- symbol: nichenetr.load_sig_network
+  purpose: Load the prior human signaling network.
+  args: {}
+- symbol: nichenetr.load_gr_network
+  purpose: Load the prior human gene-regulatory network.
+  args: {}
+- symbol: nichenetr.get_ligand_signaling_path
+  purpose: Trace the shortest weighted signaling/regulatory paths from ligands_all to targets_all through top regulators.
+  args:
+    ligand_tf_matrix: $steps.load_ligand_tf_matrix.output
+    ligands_all: $inputs.ligands_all
+    targets_all: $inputs.targets_all
+    top_n_regulators: $inputs.top_n_regulators
+    weighted_networks: $steps.load_weighted_networks.output
+- symbol: nichenetr.format_signaling_graph
+  purpose: Convert the extracted path edges into a nodes/edges table for networkx visualization.
+  args:
+    signaling_graph_list: $steps.get_ligand_signaling_path.output
+    ligands_all: $inputs.ligands_all
+    targets_all: $inputs.targets_all
+- symbol: nichenetr.infer_supporting_datasources
+  purpose: Look up which prior-knowledge source databases support each retained edge.
+  args:
+    signaling_graph_list: $steps.get_ligand_signaling_path.output
+    lr_network: $steps.load_lr_network.output
+    sig_network: $steps.load_sig_network.output
+    gr_network: $steps.load_gr_network.output
+templates:
+- nichenetr.ligand_target_signaling_path_template

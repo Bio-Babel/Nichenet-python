@@ -1,0 +1,57 @@
+id: nichenetr.convert_settings_ligand_prediction
+import_path: nichenetr.evaluation.convert_settings_ligand_prediction
+kind: function
+signature: 'convert_settings_ligand_prediction(settings: ''List[Dict[str, Any]]'',
+  all_ligands: ''List[str]'', validation: ''bool'' = True, single: ''bool'' = True)
+  -> ''List[Dict[str, Any]]'''
+purpose: Reformat experimental validation settings into per-ligand or per-setting entries for ligand-activity benchmarking.
+description: >-
+  Each entry in settings has "name"/"from"/"response" keys; a "from" list of
+  length > 1 is collapsed into a single hyphen-joined string. Depending on
+  (validation, single): validation+single expands to one output entry per
+  (setting, candidate ligand) pair with the true active ligand(s) recorded
+  under "ligand" and the candidate under "from"; validation+not-single keeps
+  one entry per setting with "from" set to the full all_ligands list, plus a
+  "ligand" key; not-validation+single expands per (setting, ligand) without a
+  "ligand" key; not-validation+not-single keeps one entry per setting with
+  "from" set to all_ligands, without a "ligand" key.
+parameters:
+- name: settings
+  type: List[Dict[str, Any]]
+  required: true
+  default: null
+  description: Each dict has "name", "from" (ligand or list of ligands), and "response" keys.
+- name: all_ligands
+  type: List[str]
+  required: true
+  default: null
+- name: validation
+  type: bool
+  required: false
+  default: true
+- name: single
+  type: bool
+  required: false
+  default: true
+mutates: 'execution_class=pure_function; operates on plain dicts/lists, no in-place
+  mutation; returns_kind=new_object'
+returns: A new list[dict] reformatted per the (validation, single) mode, as described above.
+requires: []
+writes: []
+examples:
+- 'convert_settings_ligand_prediction(settings=[{"name": "exp1", "from": ["L1",
+  "L2"], "response": response_series}], all_ligands=all_ligands, validation=True,
+  single=True)'
+failure_fixes:
+- when: settings is not a list.
+  suggest:
+  - Raises TypeError "settings should be a list".
+- when: all_ligands is not a list or tuple.
+  suggest:
+  - Raises TypeError "all_ligands should be a list of strings".
+- when: validation or single is not a bool.
+  suggest:
+  - Raises TypeError ("validation should be..."/"single should be...") — pass
+    an actual bool, not 0/1 or another truthy value.
+related:
+- nichenetr.predict_ligand_activities

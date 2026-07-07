@@ -1,0 +1,20 @@
+id: nichenetr.load_hyperparameter_list
+import_path: nichenetr.load_hyperparameter_list
+kind: function
+signature: load_hyperparameter_list() -> 'dict'
+purpose: Load the default hyperparameter settings used to construct the NicheNet prior model.
+description: >-
+  Reads hyperparameter_list.json directly from the package's bundled
+  resources directory (nichenetr/resources/) — no network access, no cache
+  dependency; safe to call in offline/CI contexts.
+parameters: []
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A dict of default hyperparameter values.
+requires: []
+writes: []
+examples:
+- load_hyperparameter_list()
+failure_fixes: []
+related:
+- nichenetr.load_source_weights_df
+- nichenetr.load_optimized_source_weights_df

@@ -1,0 +1,67 @@
+id: nichenetr.calculate_fraction_top_predicted_fisher
+import_path: nichenetr.evaluation.calculate_fraction_top_predicted_fisher
+kind: function
+signature: 'calculate_fraction_top_predicted_fisher(round_num: ''int'', response_prediction_df:
+  ''pd.DataFrame'', ligands_oi: ''List[str]'', ligand_target_matrix: ''NamedMatrix'',
+  classification_model: ''Optional[Any]'' = None, quantile_cutoff: ''float'' = 0.95,
+  p_value_output: ''bool'' = True) -> ''Union[float, Dict[str, Any]]'''
+purpose: One-sided Fisher exact test for enrichment of gene-set genes among top-predicted genes.
+description: >-
+  Uses the same top-predicted threshold logic as calculate_fraction_top_predicted
+  (quantile_cutoff on "prediction"), builds a 2x2 contingency table
+  (gene-set vs. background genes) x (top-predicted vs. not), and runs
+  scipy.stats.fisher_exact with alternative="greater". round_num, ligands_oi,
+  ligand_target_matrix, and classification_model are accepted for API
+  symmetry but not used in the computation.
+parameters:
+- name: round_num
+  type: int
+  required: true
+  default: null
+  description: Accepted for API symmetry; not used in the computation.
+- name: response_prediction_df
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Table with "prediction" and "response" columns, typically the output of assess_rf_class_probabilities.
+- name: ligands_oi
+  type: List[str]
+  required: true
+  default: null
+  description: Accepted for API symmetry; not used in the computation.
+- name: ligand_target_matrix
+  type: NamedMatrix
+  required: true
+  default: null
+  description: Accepted for API symmetry; not used in the computation.
+- name: classification_model
+  type: Any
+  required: false
+  default: null
+  description: Reserved for future extensions; currently unused.
+- name: quantile_cutoff
+  type: float
+  required: false
+  default: 0.95
+- name: p_value_output
+  type: bool
+  required: false
+  default: true
+  description: If True, return only the p-value (float); if False, return a dict with oddsratio and p_value.
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: >-
+  A float p-value (p_value_output=True) or a dict {"oddsratio": float,
+  "p_value": float} (p_value_output=False) from the one-sided Fisher exact
+  test.
+requires:
+- result.rf_predictions
+writes:
+- result.top_predicted_fisher
+examples:
+- 'calculate_fraction_top_predicted_fisher(round_num=1, response_prediction_df=rf_prediction_df,
+  ligands_oi=best_upstream_ligands, ligand_target_matrix=ligand_target_matrix,
+  quantile_cutoff=0.95, p_value_output=True)'
+failure_fixes: []
+related:
+- nichenetr.assess_rf_class_probabilities
+- nichenetr.calculate_fraction_top_predicted

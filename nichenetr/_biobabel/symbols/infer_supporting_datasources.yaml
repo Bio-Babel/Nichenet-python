@@ -1,0 +1,50 @@
+id: nichenetr.infer_supporting_datasources
+import_path: nichenetr.networks.infer_supporting_datasources
+kind: function
+signature: 'infer_supporting_datasources(signaling_graph_list: ''Dict[str, pd.DataFrame]'',
+  lr_network: ''pd.DataFrame'', sig_network: ''pd.DataFrame'', gr_network: ''pd.DataFrame'')
+  -> ''pd.DataFrame'''
+purpose: Look up which prior-knowledge source databases support each edge in an extracted signaling path.
+description: >-
+  For every (from, to) edge retained in signaling_graph_list["sig"] and
+  ["gr"], looks up the matching rows in lr_network/sig_network/gr_network to
+  find which source database(s) documented that edge, tagging each row with
+  a "layer" of "ligand_signaling" or "regulatory".
+parameters:
+- name: signaling_graph_list
+  type: Dict[str, pd.DataFrame]
+  required: true
+  default: null
+  description: Output of get_ligand_signaling_path — must contain "sig" and "gr" DataFrames.
+- name: lr_network
+  type: pd.DataFrame
+  required: true
+  default: null
+- name: sig_network
+  type: pd.DataFrame
+  required: true
+  default: null
+- name: gr_network
+  type: pd.DataFrame
+  required: true
+  default: null
+mutates: 'execution_class=pure_function; inputs only read; returns_kind=new_object'
+returns: A new pd.DataFrame with columns [from, to, source, (database), layer].
+requires:
+- result.signaling_graph
+- result.lr_network
+writes:
+- result.datasource_table
+examples:
+- infer_supporting_datasources(signaling_graph_list=signaling_graph_list, lr_network=lr_network,
+  sig_network=sig_network, gr_network=gr_network)
+failure_fixes:
+- when: lr_network/sig_network/gr_network is not a DataFrame, or signaling_graph_list is not a dict.
+  suggest:
+  - Raises ValueError ("must be a DataFrame" / "must be a dict") — pass the
+    DataFrames returned by load_lr_network/load_sig_network/load_gr_network
+    and the dict from get_ligand_signaling_path unchanged.
+related:
+- nichenetr.get_ligand_signaling_path
+- nichenetr.load_sig_network
+- nichenetr.load_gr_network

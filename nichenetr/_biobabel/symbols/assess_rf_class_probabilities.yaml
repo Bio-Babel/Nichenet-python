@@ -1,0 +1,63 @@
+id: nichenetr.assess_rf_class_probabilities
+import_path: nichenetr.evaluation.assess_rf_class_probabilities
+kind: function
+signature: 'assess_rf_class_probabilities(round_num: ''int'', folds: ''int'', geneset:
+  ''List[str]'', background_expressed_genes: ''List[str]'', ligands_oi: ''List[str]'',
+  ligand_target_matrix: ''NamedMatrix'') -> ''pd.DataFrame'''
+purpose: Cross-validated random-forest evaluation of how well ligand-target regulatory potentials predict gene-set membership.
+description: >-
+  Splits geneset into `folds` groups (shuffled with a random state seeded by
+  round_num) and, separately, the non-geneset background genes into the same
+  number of groups (also seeded by round_num). For each fold, trains a
+  RandomForestClassifier (1000 trees, fixed internal random_state=1) on the
+  ligands_oi columns of ligand_target_matrix restricted to the training
+  genes, and predicts the probability of gene-set membership for the held-out
+  test genes. Concatenates all fold predictions. Given the same round_num
+  and folds, results are exactly reproducible.
+parameters:
+- name: round_num
+  type: int
+  required: true
+  default: null
+  description: Seeds the gene-shuffling random state for this evaluation round; also used by sibling functions to label output columns.
+- name: folds
+  type: int
+  required: true
+  default: null
+  description: Number of cross-validation folds.
+- name: geneset
+  type: List[str]
+  required: true
+  default: null
+- name: background_expressed_genes
+  type: List[str]
+  required: true
+  default: null
+- name: ligands_oi
+  type: List[str]
+  required: true
+  default: null
+  description: Ligand columns of ligand_target_matrix to use as classifier features.
+- name: ligand_target_matrix
+  type: NamedMatrix
+  required: true
+  default: null
+mutates: 'execution_class=pure_function; ligand_target_matrix is only read;
+  returns_kind=new_object'
+returns: >-
+  A new pd.DataFrame with columns [gene, response, prediction] — response is
+  True if the gene was in geneset, prediction is the held-out predicted
+  probability.
+requires:
+- result.ligand_target_matrix
+writes:
+- result.rf_predictions
+examples:
+- 'assess_rf_class_probabilities(round_num=1, folds=5, geneset=geneset_oi, background_expressed_genes=background_expressed_genes,
+  ligands_oi=best_upstream_ligands, ligand_target_matrix=ligand_target_matrix)'
+failure_fixes: []
+related:
+- nichenetr.classification_evaluation_continuous_pred_wrapper
+- nichenetr.calculate_fraction_top_predicted
+- nichenetr.calculate_fraction_top_predicted_fisher
+- nichenetr.get_top_predicted_genes

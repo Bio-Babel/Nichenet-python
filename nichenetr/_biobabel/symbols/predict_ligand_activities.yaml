@@ -1,0 +1,67 @@
+id: nichenetr.predict_ligand_activities
+import_path: nichenetr.predict_ligand_activities
+kind: function
+signature: 'predict_ligand_activities(geneset: ''Sequence[str]'', background_expressed_genes:
+  ''Sequence[str]'', ligand_target_matrix: ''NamedMatrix'', potential_ligands: ''Sequence[str]'')
+  -> ''pd.DataFrame'''
+purpose: Rank candidate ligands by how well their target-gene regulatory potentials predict membership in a gene set of interest.
+description: >-
+  The core NicheNet ligand-activity step. Builds the gene universe as the
+  union of background_expressed_genes and geneset restricted to
+  ligand_target_matrix.rownames; for every ligand in potential_ligands
+  (restricted to ligand_target_matrix.colnames), computes AUROC, AUPR,
+  a background-corrected AUPR, and Pearson correlation between that
+  ligand's regulatory-potential column and binary geneset membership over
+  the gene universe.
+parameters:
+- name: geneset
+  type: Sequence[str]
+  required: true
+  default: null
+  description: Genes of interest (e.g. DE genes in the receiver) whose induction by ligands is being tested.
+- name: background_expressed_genes
+  type: Sequence[str]
+  required: true
+  default: null
+  description: Expressed genes in the receiver forming the background/null population, normally including geneset.
+- name: ligand_target_matrix
+  type: NamedMatrix
+  required: true
+  default: null
+  description: Sparse prior-model matrix (rows=target genes, cols=ligands) from load_ligand_target_matrix.
+- name: potential_ligands
+  type: Sequence[str]
+  required: true
+  default: null
+  description: Candidate ligand gene names to score, typically ligands expressed by sender cell types.
+mutates: 'execution_class=pure_function; ligand_target_matrix (an immutable NamedTuple)
+  and other inputs are only read; returns_kind=new_object'
+returns: >-
+  A new pd.DataFrame with one row per scored ligand, columns
+  [test_ligand, auroc, aupr, aupr_corrected, pearson].
+requires:
+- result.ligand_target_matrix
+writes:
+- result.ligand_activities
+examples:
+- 'predict_ligand_activities(geneset=geneset_oi, background_expressed_genes=background_expressed_genes,
+  ligand_target_matrix=ligand_target_matrix, potential_ligands=potential_ligands)'
+failure_fixes:
+- when: None of the genes in background_expressed_genes/geneset are present in ligand_target_matrix.rownames.
+  suggest:
+  - Raises ValueError mentioning "No overlap" — check that background_expressed_genes/geneset
+    use official gene symbols for the same organism as ligand_target_matrix
+    (run alias_to_symbol_anndata first).
+- when: None of the genes in geneset are in the resulting gene universe.
+  suggest:
+  - Raises ValueError mentioning "None of the geneset genes" — ensure geneset
+    is a subset of (or overlaps) background_expressed_genes.
+- when: None of potential_ligands are present in ligand_target_matrix.colnames.
+  suggest:
+  - Raises ValueError mentioning "None of the potential_ligands" — verify ligand
+    gene symbols and organism match the loaded ligand_target_matrix.
+related:
+- nichenetr.load_ligand_target_matrix
+- nichenetr.get_weighted_ligand_target_links
+- nichenetr.predict_single_cell_ligand_activities
+- nichenetr.nichenet_seuratobj_aggregate

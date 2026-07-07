@@ -1,0 +1,84 @@
+id: nichenetr.generate_prioritization_tables
+import_path: nichenetr.prioritization.generate_prioritization_tables
+kind: function
+signature: 'generate_prioritization_tables(sender_receiver_info: ''pd.DataFrame'',
+  sender_receiver_de: ''pd.DataFrame'', ligand_activities: ''pd.DataFrame'', lr_condition_de:
+  ''Optional[pd.DataFrame]'' = None, prioritizing_weights: ''Optional[Dict[str,
+  float]]'' = None, scenario: ''str'' = "case_control") -> ''pd.DataFrame'''
+purpose: Combine expression, DE, ligand activity, and condition-specificity evidence into a single ranked ligand-receptor prioritization table.
+description: >-
+  Merges sender_receiver_info, sender_receiver_de, ligand_activities (columns
+  test_ligand, aupr_corrected, and optionally rank/receiver — the output of
+  predict_ligand_activities), and optionally lr_condition_de, rescaling each
+  contributing metric (via scale_quantile_adapted/scaling_zscore) and
+  combining them per prioritizing_weights into a single
+  prioritization_score in [0, 1] and a prioritization_rank per sender-ligand-receiver-receptor
+  interaction row.
+parameters:
+- name: sender_receiver_info
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Output of process_table_to_ic(table_type="expression") (typically via generate_info_tables).
+- name: sender_receiver_de
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Output of process_table_to_ic(table_type="celltype_DE") (typically via generate_info_tables).
+- name: ligand_activities
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Output of predict_ligand_activities.
+- name: lr_condition_de
+  type: pd.DataFrame
+  required: false
+  default: null
+  description: Output of process_table_to_ic(table_type="group_DE"); required when scenario="case_control".
+- name: prioritizing_weights
+  type: Dict[str, float]
+  required: false
+  default: null
+- name: scenario
+  type: str
+  required: false
+  default: case_control
+mutates: 'execution_class=pure_function; inputs only read; returns_kind=new_object'
+returns: >-
+  A new pd.DataFrame with the merged columns plus scaled metrics,
+  prioritization_score (in [0, 1]), and prioritization_rank.
+requires:
+- result.sender_receiver_info
+- result.sender_receiver_de
+- result.ligand_activities
+writes:
+- result.prioritization_table
+examples:
+- generate_prioritization_tables(sender_receiver_info=sender_receiver_info, sender_receiver_de=sender_receiver_de,
+  ligand_activities=ligand_activities, lr_condition_de=lr_condition_de, scenario="case_control")
+failure_fixes:
+- when: A custom prioritizing_weights dict is missing required keys.
+  suggest:
+  - Raises ValueError mentioning "missing keys" — supply all weight keys the
+    default dict would have for the given scenario.
+- when: scenario is not recognized and prioritizing_weights is None.
+  suggest:
+  - Raises ValueError "scenario must be...".
+- when: scenario="case_control" but lr_condition_de is None.
+  suggest:
+  - Raises ValueError "lr_condition_de is None..." — pass the group_DE table
+    from process_table_to_ic/generate_info_tables, or switch scenario.
+- when: A nonzero condition-specificity weight is set but lr_condition_de is not provided.
+  suggest:
+  - Raises ValueError "No lr_condition_de..." — either provide lr_condition_de
+    or zero out that weight.
+- when: scenario="one_condition" while lr_condition_de is also provided.
+  suggest:
+  - Emits a UserWarning "will not be used" — lr_condition_de is ignored and
+    its weight forced to 0 for one_condition scenario.
+related:
+- nichenetr.generate_info_tables
+- nichenetr.process_table_to_ic
+- nichenetr.predict_ligand_activities
+- nichenetr.make_mushroom_plot
+- nichenetr.make_circos_lr

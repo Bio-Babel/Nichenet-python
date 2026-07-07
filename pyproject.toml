@@ -66,6 +66,8 @@ Issues              = "https://github.com/Bio-Babel/Nichenet-python/issues"
 Documentation       = "https://github.com/Bio-Babel/Nichenet-python#readme"
 "Upstream (R package)" = "https://github.com/saeyslab/nichenetr"
 
+[project.entry-points."biobabel.manifest"]
+nichenetr = "nichenetr._biobabel:get_manifest"
 [tool.hatch.build.targets.wheel]
 packages = ["nichenetr"]
 
@@ -84,3 +86,6 @@ exclude = [
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+[tool.biobabel]
+contract_class = "analysis"

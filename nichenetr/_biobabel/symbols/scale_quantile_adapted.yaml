@@ -1,0 +1,30 @@
+id: nichenetr.scale_quantile_adapted
+import_path: nichenetr.scale_quantile_adapted
+kind: function
+signature: 'scale_quantile_adapted(x: ''np.ndarray'', outlier_cutoff: ''float'' =
+  0.0) -> ''np.ndarray'''
+purpose: Quantile-scale x to [0, 1] and add a 0.001 pseudovalue so the minimum is never exactly 0.
+description: >-
+  Equivalent to scale_quantile(x, outlier_cutoff) + 0.001. The default
+  outlier_cutoff is 0.0 (no outer-quantile trimming), unlike scale_quantile's
+  default of 0.05. Used where a strictly-positive scaled score is required
+  (e.g. before applying a log or ratio downstream).
+parameters:
+- name: x
+  type: np.ndarray
+  required: true
+  default: null
+- name: outlier_cutoff
+  type: float
+  required: false
+  default: 0.0
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A new np.ndarray, same shape as x, with values in approximately [0.001, 1.001].
+requires: []
+writes: []
+examples:
+- 'scale_quantile_adapted(np.array([1.0, 5.0, 10.0, 50.0, 100.0]))'
+failure_fixes: []
+related:
+- nichenetr.scale_quantile
+- nichenetr.generate_prioritization_tables

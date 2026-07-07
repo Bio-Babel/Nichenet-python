@@ -1,0 +1,58 @@
+id: nichenetr.get_exprs_avg
+import_path: nichenetr.prioritization.get_exprs_avg
+kind: function
+signature: 'get_exprs_avg(adata: ''ad.AnnData'', celltype_col: ''str'', condition_oi:
+  ''Optional[str]'' = None, condition_col: ''Optional[str]'' = None, assay_oi: ''Optional[str]''
+  = None, *, features: ''Optional[Sequence[str]]'' = None) -> ''pd.DataFrame'''
+purpose: Compute mean expression per gene per cell type, optionally within one condition.
+description: >-
+  Same subsetting/condition semantics as calculate_de (internal
+  adata.copy(), optional condition_oi/condition_col pairing, optional
+  features/assay_oi), but reports mean expression per gene per cell type
+  rather than a differential-expression test. Does not mutate the caller's
+  adata.
+parameters:
+- name: adata
+  type: ad.AnnData
+  required: true
+  default: null
+- name: celltype_col
+  type: str
+  required: true
+  default: null
+- name: condition_oi
+  type: str
+  required: false
+  default: null
+- name: condition_col
+  type: str
+  required: false
+  default: null
+- name: assay_oi
+  type: str
+  required: false
+  default: null
+- name: features
+  type: Sequence[str]
+  required: false
+  default: null
+mutates: 'execution_class=pure_function; internal copy only, caller''s adata is
+  never mutated; returns_kind=new_object'
+returns: A new long-format pd.DataFrame with columns [gene, cluster_id, avg_expr].
+requires: []
+writes:
+- result.expr_avg_table
+examples:
+- 'get_exprs_avg(adata, celltype_col="celltype", condition_oi="High", condition_col="tumor")'
+failure_fixes:
+- when: Only one of condition_oi/condition_col is given.
+  suggest:
+  - Raises ValueError "Please provide both condition_col and condition_oi."
+- when: None of features are present in adata.var_names.
+  suggest:
+  - Returns an empty DataFrame with columns [gene, cluster_id, avg_expr]
+    instead of raising (unlike calculate_de, which raises in this case).
+related:
+- nichenetr.calculate_de
+- nichenetr.process_table_to_ic
+- nichenetr.generate_info_tables

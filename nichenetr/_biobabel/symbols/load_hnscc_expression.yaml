@@ -1,0 +1,30 @@
+id: nichenetr.load_hnscc_expression
+import_path: nichenetr.load_hnscc_expression
+kind: function
+signature: load_hnscc_expression() -> 'dict'
+purpose: Load the bundled HNSCC (Puram et al.) raw expression matrix and sample metadata.
+description: >-
+  Resolves hnscc_expression.npz (+ rownames/colnames JSON sidecars) and
+  hnscc_sample_info.parquet via resolve_data_path (cached under
+  ~/.cache/nichenetr_py/, downloaded from Zenodo with SHA-256 verification
+  on a cache miss — a real network request in that case). Used by the
+  non-AnnData tutorials (circos, ligand_activity_geneset,
+  ligand_activity_single_cell) as the starting raw-expression-matrix input,
+  in place of an AnnData object.
+parameters: []
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: 'A dict {"expression": NamedMatrix, "sample_info": pd.DataFrame}.'
+requires: []
+writes:
+- result.hnscc_expression
+examples:
+- load_hnscc_expression()
+failure_fixes:
+- when: No cached copy exists and there is no network access.
+  suggest:
+  - Raises an error from the underlying urllib download — pre-populate the
+    cache or mock nichenetr.datasets.resolve_data_path.
+related:
+- nichenetr.load_pemt_signature
+- nichenetr.predict_ligand_activities
+- nichenetr.NamedMatrix

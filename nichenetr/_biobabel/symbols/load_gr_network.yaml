@@ -1,0 +1,27 @@
+id: nichenetr.load_gr_network
+import_path: nichenetr.load_gr_network
+kind: function
+signature: load_gr_network() -> 'pd.DataFrame'
+purpose: Load the prior human gene-regulatory network.
+description: >-
+  Resolves gr_network_human.parquet via resolve_data_path (cached under
+  ~/.cache/nichenetr_py/, downloaded from Zenodo with SHA-256 verification
+  on a cache miss — a real network request in that case). Human only; there
+  is no organism parameter.
+parameters: []
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A pd.DataFrame with columns [from, to, source] describing TF-to-target regulatory interactions.
+requires: []
+writes:
+- result.gr_network
+examples:
+- load_gr_network()
+failure_fixes:
+- when: No cached copy exists and there is no network access.
+  suggest:
+  - Raises an error from the underlying urllib download — pre-populate the
+    cache or mock nichenetr.datasets.resolve_data_path.
+related:
+- nichenetr.load_sig_network
+- nichenetr.get_ligand_signaling_path
+- nichenetr.infer_supporting_datasources

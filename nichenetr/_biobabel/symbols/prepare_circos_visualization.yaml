@@ -1,0 +1,65 @@
+id: nichenetr.prepare_circos_visualization
+import_path: nichenetr.visualization.prepare_circos_visualization
+kind: function
+signature: 'prepare_circos_visualization(circos_links: ''pd.DataFrame'', ligand_colors:
+  ''Optional[dict]'' = None, target_colors: ''Optional[dict]'' = None, widths: ''Optional[dict]''
+  = None, celltype_order: ''Optional[Sequence[str]]'' = None) -> ''dict'''
+purpose: Prepare sector ordering, colors, and gaps for a ligand-to-target circos/chord plot.
+description: >-
+  Requires circos_links columns [ligand, target, weight, target_type,
+  ligand_type] (typically the output of get_ligand_target_links_oi).
+  Auto-generates colors from the tab20 colormap when ligand_colors/target_colors
+  are omitted, otherwise validates every unique ligand_type/target_type has a
+  color entry. Validates celltype_order covers all ligand_types, and that a
+  custom widths dict has all 4 required keys
+  (width_same_cell_same_ligand_type, width_different_cell,
+  width_ligand_target, width_same_cell_same_target_type). Appends a trailing
+  space to ligand names to disambiguate ligand/target sectors sharing a name.
+parameters:
+- name: circos_links
+  type: pd.DataFrame
+  required: true
+  default: null
+- name: ligand_colors
+  type: dict
+  required: false
+  default: null
+- name: target_colors
+  type: dict
+  required: false
+  default: null
+- name: widths
+  type: dict
+  required: false
+  default: null
+- name: celltype_order
+  type: Sequence[str]
+  required: false
+  default: null
+mutates: 'execution_class=pure_function; circos_links is copied before modification,
+  never mutated in place; returns_kind=new_object'
+returns: 'A new dict {"links_circle": pd.DataFrame[ligand,target,weight], "ligand_colors":
+  dict, "order": list[str], "gaps": list[float]}.'
+requires:
+- result.circos_links
+writes:
+- result.circos_vis
+examples:
+- prepare_circos_visualization(circos_links=circos_links, ligand_colors=ligand_colors,
+  target_colors=target_colors)
+failure_fixes:
+- when: ligand_colors/target_colors is given but missing an entry for some ligand_type/target_type present in circos_links.
+  suggest:
+  - Raises ValueError — add the missing type to the color dict or omit the
+    dict to auto-generate colors.
+- when: celltype_order is given but does not contain every ligand_type in circos_links.
+  suggest:
+  - Raises ValueError — include every ligand_type value in celltype_order.
+- when: A custom widths dict is missing one of the 4 required keys.
+  suggest:
+  - Raises ValueError — supply all of width_same_cell_same_ligand_type,
+    width_different_cell, width_ligand_target, width_same_cell_same_target_type,
+    or omit widths to use the defaults.
+related:
+- nichenetr.get_ligand_target_links_oi
+- nichenetr.make_circos_plot

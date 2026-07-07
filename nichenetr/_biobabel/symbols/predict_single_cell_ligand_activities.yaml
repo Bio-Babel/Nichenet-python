@@ -1,0 +1,56 @@
+id: nichenetr.predict_single_cell_ligand_activities
+import_path: nichenetr.predict_single_cell_ligand_activities
+kind: function
+signature: 'predict_single_cell_ligand_activities(cell_ids: ''Sequence[str]'', expression_scaled:
+  ''pd.DataFrame'', ligand_target_matrix: ''NamedMatrix'', potential_ligands: ''Sequence[str]'')
+  -> ''pd.DataFrame'''
+purpose: Predict ligand activity per individual cell rather than per cell population.
+description: >-
+  For each cell_id, derives a per-cell gene set from expression_scaled (genes
+  at or above the 0.975 quantile of that cell's scaled expression) and calls
+  predict_ligand_activities with that cell-specific geneset/background,
+  tagging the result with a "setting" column equal to cell_id. Cells whose
+  derived geneset is empty or covers all genes (degenerate split) are
+  skipped. expression_scaled must already be quantile-scaled (see
+  scale_quantile) before calling this.
+parameters:
+- name: cell_ids
+  type: Sequence[str]
+  required: true
+  default: null
+  description: Cell identifiers; must be present in expression_scaled.index.
+- name: expression_scaled
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Cells x genes matrix of quantile-scaled expression (see scale_quantile).
+- name: ligand_target_matrix
+  type: NamedMatrix
+  required: true
+  default: null
+- name: potential_ligands
+  type: Sequence[str]
+  required: true
+  default: null
+mutates: 'execution_class=pure_function; no in-place mutation of expression_scaled
+  or ligand_target_matrix; returns_kind=new_object'
+returns: >-
+  A new pd.DataFrame with columns [setting, test_ligand, auroc, aupr, pearson],
+  one row per (cell, ligand) pair; empty (but correctly columned) if no cell
+  yields a valid gene-set split.
+requires:
+- result.ligand_target_matrix
+writes:
+- result.single_cell_ligand_activities
+examples:
+- 'predict_single_cell_ligand_activities(cell_ids=cell_ids, expression_scaled=expression_scaled,
+  ligand_target_matrix=ligand_target_matrix, potential_ligands=potential_ligands)'
+failure_fixes:
+- when: expression_scaled has constant values across genes for every selected cell.
+  suggest:
+  - No exception is raised; returns an empty DataFrame with the expected
+    columns instead of scoring degenerate cells.
+related:
+- nichenetr.predict_ligand_activities
+- nichenetr.scale_quantile
+- nichenetr.normalize_single_cell_ligand_activities

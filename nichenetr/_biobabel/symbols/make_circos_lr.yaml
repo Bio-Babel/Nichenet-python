@@ -1,0 +1,68 @@
+id: nichenetr.make_circos_lr
+import_path: nichenetr.visualization.make_circos_lr
+kind: function
+signature: 'make_circos_lr(prioritized_tbl: ''pd.DataFrame'', colors_sender: ''dict'',
+  colors_receiver: ''dict'', cutoff: ''float'' = 0, scale: ''bool'' = False, transparency:
+  ''Optional[Any]'' = None, *, ax=None, show: ''bool'' = False, figsize=None) -> ''matplotlib.figure.Figure'''
+purpose: Draw a ligand-receptor circos/chord plot colored by sender and receiver cell type.
+description: >-
+  Requires prioritized_tbl columns [sender, receiver, ligand, receptor,
+  prioritization_score] (typically the output of generate_prioritization_tables).
+  Disambiguates duplicate ligand/receptor sector names shared across
+  senders/receivers by appending spaces, filters rows by
+  prioritization_score >= cutoff, optionally min-max scales the score, and
+  derives per-link transparency from the score when transparency is not
+  explicitly given.
+parameters:
+- name: prioritized_tbl
+  type: pd.DataFrame
+  required: true
+  default: null
+- name: colors_sender
+  type: dict
+  required: true
+  default: null
+- name: colors_receiver
+  type: dict
+  required: true
+  default: null
+- name: cutoff
+  type: float
+  required: false
+  default: 0
+- name: scale
+  type: bool
+  required: false
+  default: false
+- name: transparency
+  type: Any
+  required: false
+  default: null
+- name: ax
+  type: matplotlib.axes.Axes
+  required: false
+  default: null
+- name: show
+  type: bool
+  required: false
+  default: false
+- name: figsize
+  type: tuple
+  required: false
+  default: null
+mutates: 'execution_class=pure_function; prioritized_tbl is only read; returns_kind=new_object'
+returns: A matplotlib.figure.Figure containing the rendered ligand-receptor circos plot.
+requires:
+- result.prioritization_table
+writes: []
+examples:
+- make_circos_lr(prioritized_tbl=prioritization_table, colors_sender=colors_sender,
+  colors_receiver=colors_receiver, cutoff=0.9)
+failure_fixes:
+- when: prioritized_tbl is missing one of sender/receiver/ligand/receptor/prioritization_score.
+  suggest:
+  - Raises ValueError "must contain columns" — verify the table came from
+    generate_prioritization_tables.
+related:
+- nichenetr.generate_prioritization_tables
+- nichenetr.make_mushroom_plot

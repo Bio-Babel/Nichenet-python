@@ -1,0 +1,58 @@
+id: nichenetr.format_signaling_graph
+import_path: nichenetr.networks.format_signaling_graph
+kind: function
+signature: 'format_signaling_graph(signaling_graph_list: ''Dict[str, pd.DataFrame]'',
+  ligands_all: ''List[str]'', targets_all: ''List[str]'', sig_color: ''str'' = "steelblue",
+  gr_color: ''str'' = "orange") -> ''Dict[str, pd.DataFrame]'''
+purpose: Convert a signaling/regulatory edge list into a nodes/edges table ready for network visualization.
+description: >-
+  Reads signaling_graph_list["sig"]/["gr"] (from,to,weight) and produces a
+  nodes table (typing/coloring each node as ligand, target, or intermediate
+  mediator) and an edges table (adding color and a "layer" tag per edge)
+  suitable for plotting with networkx.
+parameters:
+- name: signaling_graph_list
+  type: Dict[str, pd.DataFrame]
+  required: true
+  default: null
+  description: Output of get_ligand_signaling_path — must contain "sig" and "gr" DataFrames.
+- name: ligands_all
+  type: List[str]
+  required: true
+  default: null
+- name: targets_all
+  type: List[str]
+  required: true
+  default: null
+- name: sig_color
+  type: str
+  required: false
+  default: steelblue
+- name: gr_color
+  type: str
+  required: false
+  default: orange
+mutates: 'execution_class=pure_function; inputs only read; returns_kind=new_object'
+returns: 'A new dict {"nodes": pd.DataFrame[id,label,color,type], "edges": pd.DataFrame[from,to,weight,color,layer]}.'
+requires:
+- result.signaling_graph
+writes:
+- result.signaling_graph_formatted
+examples:
+- format_signaling_graph(signaling_graph_list=signaling_graph_list, ligands_all=["TGFB1"],
+  targets_all=["SERPINE1"])
+failure_fixes:
+- when: signaling_graph_list is not a dict, or is missing/wrong-typed "sig"/"gr" keys.
+  suggest:
+  - Raises ValueError ("must be a dict" / "must be a DataFrame") — pass the
+    dict returned by get_ligand_signaling_path unchanged.
+- when: A ligand in ligands_all has no outgoing edge in "sig", or a target in targets_all has no incoming edge in "gr".
+  suggest:
+  - Raises ValueError ("Ligands not found..." / "Targets not found...") —
+    verify the same ligands_all/targets_all were used in get_ligand_signaling_path.
+- when: sig_color or gr_color is not a string.
+  suggest:
+  - Raises ValueError "sig_color must be...".
+related:
+- nichenetr.get_ligand_signaling_path
+- nichenetr.infer_supporting_datasources

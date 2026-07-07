@@ -1,0 +1,43 @@
+id: nichenetr.prepare_ligand_receptor_visualization
+import_path: nichenetr.targets.prepare_ligand_receptor_visualization
+kind: function
+signature: 'prepare_ligand_receptor_visualization(lr_network_top_df: ''pd.DataFrame'',
+  best_upstream_ligands: ''list[str]'', order_hclust: ''Literal["both","ligands","receptors","none"]''
+  = "both") -> ''np.ndarray'''
+purpose: Pivot ligand-receptor weights into a receptors x ligands matrix ordered for heatmap plotting.
+description: >-
+  Pivots the long-format lr_network_top_df (from,to,weight) into a dense
+  receptors (rows) x ligands (columns) matrix, ordering axes via
+  hierarchical clustering (matching distance) according to order_hclust, or
+  by alphabetical/input order when clustering is skipped for that axis.
+parameters:
+- name: lr_network_top_df
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Columns [from, to, weight] — the output of get_weighted_ligand_receptor_links.
+- name: best_upstream_ligands
+  type: list[str]
+  required: true
+  default: null
+- name: order_hclust
+  type: Literal["both","ligands","receptors","none"]
+  required: false
+  default: both
+mutates: 'execution_class=pure_function; inputs only read; returns_kind=new_object'
+returns: A new ndarray subclass exposing .rownames (receptors) and .colnames (ligands).
+requires:
+- result.ligand_receptor_links
+writes:
+- result.ligand_receptor_matrix_vis
+examples:
+- prepare_ligand_receptor_visualization(lr_network_top_df=lr_network_top_df, best_upstream_ligands=best_upstream_ligands,
+  order_hclust="both")
+failure_fixes:
+- when: order_hclust is not one of "both"/"ligands"/"receptors"/"none".
+  suggest:
+  - Raises ValueError mentioning "order_hclust" — use one of the four allowed
+    literal values.
+related:
+- nichenetr.get_weighted_ligand_receptor_links
+- nichenetr.make_heatmap_ggplot

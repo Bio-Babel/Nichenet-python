@@ -1,0 +1,110 @@
+id: nichenetr.geneset_ligand_activity_visualization
+title: Rank ligands against a predefined gene set from a raw expression matrix, then visualize
+description: >-
+  Starting from a raw (non-AnnData) expression matrix and sample metadata —
+  e.g. the bundled HNSCC dataset — and a predefined gene set of interest
+  (e.g. the bundled pEMT signature), ranks candidate ligands with
+  predict_ligand_activities, then visualizes the top ligands' target and
+  receptor links as heatmaps, with per-tumor target expression, or
+  alternatively as a circos/chord diagram.
+task_tags:
+- ligand-prioritization
+- circos-visualization
+- cell-cell-communication
+when_to_use:
+- The starting data is a raw genes x samples/cells expression matrix (not an
+  AnnData object) and the gene set of interest is predefined rather than
+  computed via a differential-expression test.
+when_not_to_use:
+- The starting data is an AnnData object with a cell-type/condition design —
+  use nichenetr.seurat_ligand_activity instead, which derives geneset_oi
+  from DE rather than taking a predefined gene set.
+inputs:
+- name: organism
+  kind: str
+- name: raw_expression_columns
+  kind: list[str]
+  description: Gene/column names of the raw expression matrix, possibly aliases, to canonicalize.
+- name: background_expressed_genes
+  kind: list[str]
+  description: Expressed genes in the receiver population, computed externally from the raw expression matrix (not via a nichenetr symbol).
+- name: potential_ligands
+  kind: list[str]
+  description: Candidate ligand genes expressed in sender cells, computed externally from the raw expression matrix.
+- name: ligand_type_indication_df
+  kind: DataFrame
+  description: Columns [ligand_type, ligand] labeling each ligand's cell type of origin; needed only for the circos-visualization alternative.
+outputs:
+- 'ligand_activities: ranked candidate ligands against the pEMT (or other predefined) gene set (result.ligand_activities).'
+- 'ligand_target_matrix_vis: clustered targets x ligands matrix for heatmap visualization (result.ligand_target_matrix_vis).'
+steps:
+- symbol: nichenetr.load_lr_network
+  purpose: Load the prior ligand-receptor network.
+  args:
+    organism: $inputs.organism
+- symbol: nichenetr.load_ligand_target_matrix
+  purpose: Load the prior ligand-target regulatory-potential matrix.
+  args:
+    organism: $inputs.organism
+- symbol: nichenetr.load_weighted_networks
+  purpose: Load the weighted signaling/gene-regulatory networks.
+  args:
+    organism: $inputs.organism
+- symbol: nichenetr.convert_alias_to_symbols
+  purpose: Canonicalize the raw expression matrix's gene column names to official symbols.
+  args:
+    genes: $inputs.raw_expression_columns
+    organism: $inputs.organism
+- symbol: nichenetr.load_pemt_signature
+  purpose: Load the bundled pEMT gene set as the example geneset of interest.
+  args: {}
+- symbol: nichenetr.predict_ligand_activities
+  purpose: Rank potential_ligands by how well they explain the geneset of interest.
+  args:
+    geneset: $steps.load_pemt_signature.output
+    background_expressed_genes: $inputs.background_expressed_genes
+    ligand_target_matrix: $steps.load_ligand_target_matrix.output
+    potential_ligands: $inputs.potential_ligands
+- symbol: nichenetr.get_weighted_ligand_target_links
+  purpose: Get top target genes (intersected with the geneset) for each top-ranked ligand.
+  args:
+    ligand_oi: $steps.predict_ligand_activities.output
+    geneset: $steps.load_pemt_signature.output
+    ligand_target_matrix: $steps.load_ligand_target_matrix.output
+  notes:
+  - Called once per top-ranked ligand; results concatenated into one ligand_target_df.
+- symbol: nichenetr.prepare_ligand_target_visualization
+  purpose: Build the clustered targets x ligands matrix.
+  args:
+    ligand_target_df: $steps.get_weighted_ligand_target_links.output
+    ligand_target_matrix: $steps.load_ligand_target_matrix.output
+- symbol: nichenetr.make_heatmap_ggplot
+  purpose: Render the ligand-target heatmap.
+  args:
+    matrix_oi: $steps.prepare_ligand_target_visualization.output
+- symbol: nichenetr.get_weighted_ligand_receptor_links
+  purpose: Build the weighted ligand-receptor link table for top ligands.
+  args:
+    best_upstream_ligands: $steps.predict_ligand_activities.output
+    expressed_receptors: $inputs.background_expressed_genes
+    lr_network: $steps.load_lr_network.output
+    weighted_networks_lr_sig: $steps.load_weighted_networks.output
+- symbol: nichenetr.prepare_ligand_receptor_visualization
+  purpose: Pivot the ligand-receptor links into a matrix.
+  args:
+    lr_network_top_df: $steps.get_weighted_ligand_receptor_links.output
+    best_upstream_ligands: $steps.predict_ligand_activities.output
+- symbol: nichenetr.make_heatmap_ggplot
+  purpose: Render the ligand-receptor heatmap.
+  args:
+    matrix_oi: $steps.prepare_ligand_receptor_visualization.output
+  notes:
+  - 'Circos alternative to the two heatmap endings above: get_ligand_target_links_oi(ligand_type_indication_df,
+    active_ligand_target_links_df) -> prepare_circos_visualization ->
+    make_circos_plot, and similarly get_weighted_ligand_receptor_links ->
+    prepare_circos_visualization -> make_circos_plot for the receptor side.'
+  - 'Optional per-tumor detail: scale_quantile the raw per-tumor target
+    expression, then make_threecolor_heatmap_ggplot to show target
+    expression variation across tumor samples.'
+templates:
+- nichenetr.geneset_ligand_activity_visualization_template

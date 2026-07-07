@@ -1,0 +1,88 @@
+id: nichenetr.make_mushroom_plot
+import_path: nichenetr.visualization.make_mushroom_plot
+kind: function
+signature: 'make_mushroom_plot(prioritization_table: ''pd.DataFrame'', top_n: ''int''
+  = 30, show_rankings: ''bool'' = False, show_all_datapoints: ''bool'' = False, true_color_range:
+  ''bool'' = True, size: ''str'' = "scaled_avg_exprs", color: ''str'' = "scaled_p_val_adapted",
+  ligand_fill_colors: ''tuple'' = ("#DEEBF7", "#08306B"), receptor_fill_colors: ''tuple''
+  = ("#FEE0D2", "#A50F15"), *, ax=None, show: ''bool'' = False, figsize=None) -> ''matplotlib.figure.Figure'''
+purpose: Draw a dual-semicircle ("mushroom") dot plot of prioritized ligand-receptor interactions.
+description: >-
+  Python equivalent of R's make_mushroom_plot (ggforce::geom_arc_bar). Takes
+  the top_n rows of prioritization_table (by prioritization_score, computed
+  if absent), and for each sender-ligand/receiver-receptor pair draws an
+  upper wedge (ligand) sized/colored by "{size}_{sender or ligand}"/"{color}_{sender
+  or ligand}" and a lower wedge (receptor) sized/colored by the receiver-side
+  columns. size="pct_expressed" swaps the expected suffixes to
+  "_sender"/"_receiver". show_all_datapoints is accepted but not exercised
+  by the current drawing loop (has no observed effect).
+parameters:
+- name: prioritization_table
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Output of generate_prioritization_tables; must contain sender, ligand, receptor, and size/color-suffixed columns.
+- name: top_n
+  type: int
+  required: false
+  default: 30
+- name: show_rankings
+  type: bool
+  required: false
+  default: false
+- name: show_all_datapoints
+  type: bool
+  required: false
+  default: false
+- name: true_color_range
+  type: bool
+  required: false
+  default: true
+- name: size
+  type: str
+  required: false
+  default: scaled_avg_exprs
+- name: color
+  type: str
+  required: false
+  default: scaled_p_val_adapted
+- name: ligand_fill_colors
+  type: tuple
+  required: false
+  default: ("#DEEBF7", "#08306B")
+- name: receptor_fill_colors
+  type: tuple
+  required: false
+  default: ("#FEE0D2", "#A50F15")
+- name: ax
+  type: matplotlib.axes.Axes
+  required: false
+  default: null
+- name: show
+  type: bool
+  required: false
+  default: false
+- name: figsize
+  type: tuple
+  required: false
+  default: null
+mutates: 'execution_class=pure_function; prioritization_table is only read;
+  returns_kind=new_object'
+returns: A matplotlib.figure.Figure containing the mushroom plot.
+requires:
+- result.prioritization_table
+writes: []
+examples:
+- make_mushroom_plot(prioritization_table=prioritization_table, top_n=30)
+failure_fixes:
+- when: prioritization_table is missing a required column (sender, ligand, receptor, or a size/color-suffixed column).
+  suggest:
+  - Raises ValueError listing the missing columns — verify the table came
+    from generate_prioritization_tables and matches the chosen size/color parameters.
+- when: prioritization_table has no rows within top_n after filtering.
+  suggest:
+  - Raises ValueError "No ligand-receptor interactions found in the top_n." —
+    increase top_n or check the input table is non-empty.
+related:
+- nichenetr.generate_prioritization_tables
+- nichenetr.make_circos_lr

@@ -1,0 +1,36 @@
+id: nichenetr.convert_alias_to_symbols
+import_path: nichenetr.symbols.convert_alias_to_symbols
+kind: function
+signature: 'convert_alias_to_symbols(genes: ''Sequence[str]'', organism: ''str'' =
+  ''human'', verbose: ''bool'' = True) -> ''list[str]'''
+purpose: Map a list of gene aliases to official gene symbols; unmapped names are kept as-is.
+description: >-
+  Loads the bundled geneinfo_alias table for organism via load_geneinfo_alias,
+  builds an alias-to-symbol dict (first occurrence wins on duplicate aliases),
+  and returns a new list the same length/order as genes, substituting the
+  official symbol wherever an alias is found and leaving genes unmatched by
+  the table unchanged. If verbose is True, prints a summary of which genes
+  changed. An empty genes list returns [] immediately without loading data.
+parameters:
+- name: genes
+  type: Sequence[str]
+  required: true
+  default: null
+- name: organism
+  type: str
+  required: false
+  default: human
+- name: verbose
+  type: bool
+  required: false
+  default: true
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A new list[str], same length/order as genes, with aliases replaced by official symbols.
+requires: []
+writes: []
+examples:
+- 'convert_alias_to_symbols(["Fn1", "FGF2"], organism="mouse", verbose=False)'
+failure_fixes: []
+related:
+- nichenetr.alias_to_symbol_anndata
+- nichenetr.load_geneinfo_alias

@@ -1,0 +1,36 @@
+id: nichenetr.normalize_single_cell_ligand_activities
+import_path: nichenetr.normalize_single_cell_ligand_activities
+kind: function
+signature: 'normalize_single_cell_ligand_activities(ligand_activities: ''pd.DataFrame'')
+  -> ''pd.DataFrame'''
+purpose: Make per-cell ligand-activity AUPR scores comparable across cells.
+description: >-
+  Takes the long-format output of predict_single_cell_ligand_activities
+  (columns setting, test_ligand, aupr), applies scaling_modified_zscore to
+  the aupr values within each "setting" (cell) group, drops duplicate
+  (setting, test_ligand) rows, renames setting->cell and test_ligand->ligand,
+  and pivots to a wide cells x ligands DataFrame. Missing (cell, ligand)
+  combinations are filled with the global minimum normalized value (or 0.0
+  if that itself is NaN).
+parameters:
+- name: ligand_activities
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Long-format table with columns setting, test_ligand, aupr — the output of predict_single_cell_ligand_activities.
+mutates: 'execution_class=pure_function; the input DataFrame is copied before
+  transformation, never mutated in place; returns_kind=new_object'
+returns: >-
+  A new wide pd.DataFrame with a "cell" column and one column per ligand,
+  holding modified-z-score-normalized AUPR values.
+requires:
+- result.single_cell_ligand_activities
+writes:
+- result.normalized_single_cell_activities
+examples:
+- normalize_single_cell_ligand_activities(single_cell_ligand_activities)
+failure_fixes: []
+related:
+- nichenetr.predict_single_cell_ligand_activities
+- nichenetr.scaling_modified_zscore
+- nichenetr.single_ligand_activity_score_regression

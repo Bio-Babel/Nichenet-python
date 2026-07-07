@@ -1,0 +1,20 @@
+id: nichenetr.load_optimized_source_weights_df
+import_path: nichenetr.load_optimized_source_weights_df
+kind: function
+signature: load_optimized_source_weights_df() -> 'pd.DataFrame'
+purpose: Load the optimized (model-selection-tuned) per-source-database weighting table.
+description: >-
+  Reads optimized_source_weights_df.parquet directly from the package's
+  bundled resources directory (nichenetr/resources/) — no network access,
+  no cache dependency; safe to call in offline/CI contexts.
+parameters: []
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A pd.DataFrame of optimized per-source weighting values.
+requires: []
+writes: []
+examples:
+- load_optimized_source_weights_df()
+failure_fixes: []
+related:
+- nichenetr.load_source_weights_df
+- nichenetr.load_hyperparameter_list

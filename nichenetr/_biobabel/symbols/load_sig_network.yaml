@@ -1,0 +1,26 @@
+id: nichenetr.load_sig_network
+import_path: nichenetr.load_sig_network
+kind: function
+signature: load_sig_network() -> 'pd.DataFrame'
+purpose: Load the prior human signaling network.
+description: >-
+  Resolves sig_network_human.parquet via resolve_data_path (cached under
+  ~/.cache/nichenetr_py/, downloaded from Zenodo with SHA-256 verification
+  on a cache miss — a real network request in that case). Human only; there
+  is no organism parameter.
+parameters: []
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A pd.DataFrame with columns [from, to, source] describing signaling interactions.
+requires: []
+writes:
+- result.sig_network
+examples:
+- load_sig_network()
+failure_fixes:
+- when: No cached copy exists and there is no network access.
+  suggest:
+  - Raises an error from the underlying urllib download — pre-populate the
+    cache or mock nichenetr.datasets.resolve_data_path.
+related:
+- nichenetr.load_gr_network
+- nichenetr.infer_supporting_datasources

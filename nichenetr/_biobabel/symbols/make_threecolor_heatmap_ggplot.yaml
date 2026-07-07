@@ -1,0 +1,90 @@
+id: nichenetr.make_threecolor_heatmap_ggplot
+import_path: nichenetr.visualization.make_threecolor_heatmap_ggplot
+kind: function
+signature: 'make_threecolor_heatmap_ggplot(matrix_oi, y_name: ''str'' = "y", x_name:
+  ''str'' = "x", y_axis: ''bool'' = True, x_axis: ''bool'' = True, x_axis_position:
+  ''str'' = "top", legend_position: ''str'' = "top", low_color: ''str'' = "blue",
+  mid_color: ''str'' = "whitesmoke", high_color: ''str'' = "red", mid: ''float'' =
+  0.0, legend_title: ''str'' = "score", *, ax=None, show: ''bool'' = False, figsize=None)
+  -> ''matplotlib.figure.Figure'''
+purpose: Draw a diverging 3-color heatmap (e.g. for log-fold-change values), the Python equivalent of R's make_threecolor_heatmap_ggplot.
+description: >-
+  Like make_heatmap_ggplot but uses matplotlib.colors.TwoSlopeNorm centered
+  at mid, with vmin/vmax auto-adjusted when all values lie on one side of
+  mid. Typically used to visualize sender ligand log-fold-change output from
+  get_lfc_celltype.
+parameters:
+- name: matrix_oi
+  type: DataFrame | ndarray | NamedMatrix-like
+  required: true
+  default: null
+- name: y_name
+  type: str
+  required: false
+  default: y
+- name: x_name
+  type: str
+  required: false
+  default: x
+- name: y_axis
+  type: bool
+  required: false
+  default: true
+- name: x_axis
+  type: bool
+  required: false
+  default: true
+- name: x_axis_position
+  type: str
+  required: false
+  default: top
+- name: legend_position
+  type: str
+  required: false
+  default: top
+- name: low_color
+  type: str
+  required: false
+  default: blue
+- name: mid_color
+  type: str
+  required: false
+  default: whitesmoke
+- name: high_color
+  type: str
+  required: false
+  default: red
+- name: mid
+  type: float
+  required: false
+  default: 0.0
+- name: legend_title
+  type: str
+  required: false
+  default: score
+- name: ax
+  type: matplotlib.axes.Axes
+  required: false
+  default: null
+- name: show
+  type: bool
+  required: false
+  default: false
+- name: figsize
+  type: tuple
+  required: false
+  default: null
+mutates: 'execution_class=pure_function; matrix_oi is only read; returns_kind=new_object'
+returns: A matplotlib.figure.Figure containing the rendered diverging heatmap.
+requires: []
+writes: []
+examples:
+- 'make_threecolor_heatmap_ggplot(sender_lfc_table.set_index("gene").to_numpy(),
+  y_name="Ligands", x_name="Senders", legend_title="LFC")'
+failure_fixes:
+- when: x_axis_position is not "top" or "bottom".
+  suggest:
+  - Raises ValueError naming x_axis_position.
+related:
+- nichenetr.get_lfc_celltype
+- nichenetr.make_heatmap_ggplot

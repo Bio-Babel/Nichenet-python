@@ -1,0 +1,155 @@
+id: nichenetr.seurat_ligand_activity
+title: Rank sender ligands explaining a receiver's differential expression (AnnData)
+description: >-
+  Canonical step-by-step NicheNet analysis on an AnnData object: rank
+  candidate ligands from sender cell type(s) by how well their target genes
+  explain a set of genes differentially expressed in a receiver cell type
+  between two conditions, then visualize ligand-target and
+  ligand-receptor links. Run both sender-agnostic (all cell types as
+  potential ligand sources) and sender-focused (a specific subset) variants
+  and compare with make_line_plot. nichenet_seuratobj_aggregate performs
+  this entire recipe in one call for a single sender/receiver combination.
+task_tags:
+- differential-expression
+- ligand-prioritization
+- cell-cell-communication
+when_to_use:
+- An AnnData object has a cell-type column and a two-level condition column,
+  and the question is "which ligands could explain the DE genes in this
+  receiver population between these two conditions."
+when_not_to_use:
+- Only a plain per-cell-type marker/DE list is needed with no ligand-activity
+  step — use scanpy.tl.rank_genes_groups directly.
+- The unit of analysis is a single cell rather than a cell population — use
+  the nichenetr.single_cell_ligand_activity workflow instead.
+inputs:
+- name: adata
+  kind: AnnData
+  description: Cells x genes AnnData with a cell-type column and a two-level condition column in .obs.
+  requirements:
+  - var_names should be canonicalizable to official gene symbols for organism.
+- name: organism
+  kind: str
+  description: Organism matching the prior networks to load ("human" or "mouse").
+- name: celltype_col
+  kind: str
+  description: Column in adata.obs holding cell type labels.
+- name: receiver_celltype
+  kind: str
+  description: The receiver cell type whose DE genes are being explained.
+- name: sender_celltypes
+  kind: list[str]
+  description: Candidate sender cell type(s); use all cell types for the sender-agnostic variant.
+- name: condition_col
+  kind: str
+- name: condition_oi
+  kind: str
+- name: condition_ref
+  kind: str
+- name: geneset_oi
+  kind: list[str]
+  description: >-
+    Genes differentially expressed in the receiver between condition_oi and
+    condition_ref, typically computed via scanpy.tl.rank_genes_groups on the
+    receiver-only subset of adata (this is an external scanpy step, not a
+    nichenetr symbol call).
+outputs:
+- 'ligand_activities: ranked candidate ligands with AUROC/AUPR/Pearson scores against geneset_oi (result.ligand_activities).'
+- 'ligand_target_matrix_vis: clustered targets x ligands matrix for heatmap visualization (result.ligand_target_matrix_vis).'
+- 'ligand_receptor_matrix_vis: clustered receptors x ligands matrix for heatmap visualization (result.ligand_receptor_matrix_vis).'
+steps:
+- symbol: nichenetr.alias_to_symbol_anndata
+  purpose: Canonicalize adata.var_names to official gene symbols before any expressed-gene computation.
+  args:
+    adata: $inputs.adata
+    organism: $inputs.organism
+  notes:
+  - Must run before get_expressed_genes and any DE computation.
+- symbol: nichenetr.load_lr_network
+  purpose: Load the prior ligand-receptor network for the same organism.
+  args:
+    organism: $inputs.organism
+- symbol: nichenetr.load_ligand_target_matrix
+  purpose: Load the prior ligand-target regulatory-potential matrix for the same organism.
+  args:
+    organism: $inputs.organism
+- symbol: nichenetr.load_weighted_networks
+  purpose: Load the weighted signaling/gene-regulatory networks for the same organism.
+  args:
+    organism: $inputs.organism
+- symbol: nichenetr.get_expressed_genes
+  purpose: Compute background_expressed_genes for the receiver cell type.
+  args:
+    adata: $steps.alias_to_symbol_anndata.output
+    celltype_col: $inputs.celltype_col
+    celltype: $inputs.receiver_celltype
+  notes:
+  - Also call once per entry in sender_celltypes to get each sender's
+    expressed genes; their union forms potential_ligands after restricting
+    to ligand_target_matrix.colnames.
+- symbol: nichenetr.predict_ligand_activities
+  purpose: Rank potential_ligands by how well they explain geneset_oi.
+  args:
+    geneset: $inputs.geneset_oi
+    background_expressed_genes: $steps.get_expressed_genes.output
+    ligand_target_matrix: $steps.load_ligand_target_matrix.output
+    potential_ligands: $steps.get_expressed_genes.output
+  notes:
+  - Run once with potential_ligands from all cell types (sender-agnostic) and
+    once restricted to sender_celltypes (sender-focused); compare rankings
+    with make_line_plot.
+- symbol: nichenetr.get_weighted_ligand_target_links
+  purpose: Get top target genes (intersected with geneset_oi) for each top-ranked ligand.
+  args:
+    ligand_oi: $inputs.receiver_celltype
+    geneset: $inputs.geneset_oi
+    ligand_target_matrix: $steps.load_ligand_target_matrix.output
+  notes:
+  - Called once per top-ranked ligand (from ligand_activities); results are
+    concatenated into one ligand_target_df before the next step.
+- symbol: nichenetr.prepare_ligand_target_visualization
+  purpose: Build the clustered targets x ligands matrix for heatmap plotting.
+  args:
+    ligand_target_df: $steps.get_weighted_ligand_target_links.output
+    ligand_target_matrix: $steps.load_ligand_target_matrix.output
+- symbol: nichenetr.make_heatmap_ggplot
+  purpose: Render the ligand-target heatmap.
+  args:
+    matrix_oi: $steps.prepare_ligand_target_visualization.output
+- symbol: nichenetr.get_weighted_ligand_receptor_links
+  purpose: Build the weighted ligand-receptor link table for top ligands and expressed receptors.
+  args:
+    best_upstream_ligands: $steps.predict_ligand_activities.output
+    expressed_receptors: $steps.get_expressed_genes.output
+    lr_network: $steps.load_lr_network.output
+    weighted_networks_lr_sig: $steps.load_weighted_networks.output
+- symbol: nichenetr.prepare_ligand_receptor_visualization
+  purpose: Pivot the ligand-receptor links into a matrix for heatmap plotting.
+  args:
+    lr_network_top_df: $steps.get_weighted_ligand_receptor_links.output
+    best_upstream_ligands: $steps.predict_ligand_activities.output
+- symbol: nichenetr.make_heatmap_ggplot
+  purpose: Render the ligand-receptor heatmap.
+  args:
+    matrix_oi: $steps.prepare_ligand_receptor_visualization.output
+- symbol: nichenetr.get_lfc_celltype
+  purpose: Compute per-sender log-fold-change of top ligands between condition_oi and condition_ref.
+  args:
+    adata: $steps.alias_to_symbol_anndata.output
+    celltype_col: $inputs.celltype_col
+    senders: $inputs.sender_celltypes
+    condition_col: $inputs.condition_col
+    condition_oi: $inputs.condition_oi
+    condition_ref: $inputs.condition_ref
+    ligands_oi: $steps.predict_ligand_activities.output
+- symbol: nichenetr.make_threecolor_heatmap_ggplot
+  purpose: Render the sender ligand log-fold-change heatmap.
+  args:
+    matrix_oi: $steps.get_lfc_celltype.output
+  notes:
+  - 'Optional circos alternative to the heatmap steps above: assign_ligands_to_celltype
+    -> get_ligand_target_links_oi -> prepare_circos_visualization ->
+    make_circos_plot. Prefer heatmaps when there are many sender cell types —
+    circos plots can be harder to interpret with many senders.'
+templates:
+- nichenetr.seurat_ligand_activity_template

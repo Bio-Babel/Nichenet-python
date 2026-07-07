@@ -1,0 +1,26 @@
+id: nichenetr.load_ligand_tf_matrix
+import_path: nichenetr.load_ligand_tf_matrix
+kind: function
+signature: load_ligand_tf_matrix() -> 'NamedMatrix'
+purpose: Load the sparse ligand-to-transcription-factor regulatory potential matrix.
+description: >-
+  Resolves ligand_tf_matrix.npz plus rownames/colnames JSON sidecars via
+  resolve_data_path (cached under ~/.cache/nichenetr_py/, downloaded from
+  Zenodo with SHA-256 verification on a cache miss — a real network request
+  in that case). No organism parameter.
+parameters: []
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A NamedMatrix with rownames=transcription factors and colnames=ligands.
+requires: []
+writes:
+- result.ligand_tf_matrix
+examples:
+- load_ligand_tf_matrix()
+failure_fixes:
+- when: No cached copy exists and there is no network access.
+  suggest:
+  - Raises an error from the underlying urllib download — pre-populate the
+    cache or mock nichenetr.datasets.resolve_data_path.
+related:
+- nichenetr.get_ligand_signaling_path
+- nichenetr.NamedMatrix

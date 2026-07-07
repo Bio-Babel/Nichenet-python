@@ -1,0 +1,81 @@
+id: nichenetr.get_lfc_celltype
+import_path: nichenetr.symbols.get_lfc_celltype
+kind: function
+signature: 'get_lfc_celltype(adata: ''ad.AnnData'', celltype_col: ''str'', senders:
+  ''Sequence[str]'', condition_col: ''str'', condition_oi: ''str'', condition_ref:
+  ''str'', ligands_oi: ''Optional[Sequence[str]]'' = None, celltype_specificity:
+  ''bool'' = True, layer: ''Optional[str]'' = None) -> ''pd.DataFrame'''
+purpose: Compute per-sender-cell-type log-fold changes between two conditions.
+description: >-
+  For each cell type in senders (or pooled across all of them if
+  celltype_specificity is False), subsets adata to that cell type, runs
+  scanpy.tl.rank_genes_groups (Wilcoxon, condition_oi vs condition_ref on
+  condition_col) on an internal copy, and extracts the log2 fold change per
+  gene via scanpy.get.rank_genes_groups_df. Per-cell-type results are outer-merged
+  on gene into one wide table. Optionally filters rows to ligands_oi at the
+  end. Used to build the sender ligand LFC heatmap alongside a ligand-target
+  or ligand-receptor heatmap.
+parameters:
+- name: adata
+  type: ad.AnnData
+  required: true
+  default: null
+- name: celltype_col
+  type: str
+  required: true
+  default: null
+- name: senders
+  type: Sequence[str]
+  required: true
+  default: null
+- name: condition_col
+  type: str
+  required: true
+  default: null
+- name: condition_oi
+  type: str
+  required: true
+  default: null
+- name: condition_ref
+  type: str
+  required: true
+  default: null
+- name: ligands_oi
+  type: Sequence[str]
+  required: false
+  default: null
+- name: celltype_specificity
+  type: bool
+  required: false
+  default: true
+- name: layer
+  type: str
+  required: false
+  default: null
+mutates: 'execution_class=pure_function; scanpy.tl.rank_genes_groups writes to
+  an internal adata.copy() (uns["rank_genes_groups"]), never to the caller''s
+  adata; returns_kind=new_object'
+returns: >-
+  A new pd.DataFrame with column "gene" plus one log-fold-change column per
+  sender cell type (celltype_specificity=True) or a single "lfc" column
+  (celltype_specificity=False).
+requires: []
+writes:
+- result.sender_lfc_table
+examples:
+- 'get_lfc_celltype(adata, celltype_col="celltype", senders=["CAF"], condition_col="tumor",
+  condition_oi="High", condition_ref="Low", ligands_oi=best_upstream_ligands)'
+failure_fixes:
+- when: A sender cell type in senders has no cells in adata.
+  suggest:
+  - Emits a UserWarning "Cell type ... not found; skipping." and continues
+    with the remaining senders instead of raising.
+- when: condition_oi or condition_ref is missing from a subset's condition_col values.
+  suggest:
+  - Emits a UserWarning and returns an empty per-cell-type DataFrame for that
+    subset instead of raising; check adata.obs[condition_col].value_counts()
+    per cell type.
+related:
+- nichenetr.calculate_de
+- nichenetr.make_threecolor_heatmap_ggplot
+- nichenetr.nichenet_seuratobj_aggregate

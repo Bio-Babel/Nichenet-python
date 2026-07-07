@@ -1,0 +1,29 @@
+id: nichenetr.scaling_modified_zscore
+import_path: nichenetr.scaling_modified_zscore
+kind: function
+signature: 'scaling_modified_zscore(x: ''np.ndarray'') -> ''np.ndarray'''
+purpose: Modified (median/MAD-based) z-score normalization robust to outliers.
+description: >-
+  Computes 0.6745 * (x - median) / (median absolute deviation * 1.4826). If
+  the MAD is exactly 0 (all values equal or symmetric about the median),
+  returns 0.6745 * (x - median) without dividing, instead of raising or
+  producing Inf/NaN.
+parameters:
+- name: x
+  type: np.ndarray
+  required: true
+  default: null
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A new np.ndarray of the same shape as x, modified-z-score normalized.
+requires: []
+writes: []
+examples:
+- 'scaling_modified_zscore(np.array([1.0, 2.0, 2.0, 3.0]))'
+failure_fixes:
+- when: The median absolute deviation of x is 0.
+  suggest:
+  - No exception is raised; the result falls back to 0.6745 * (x - median)
+    instead of a divide-by-zero error.
+related:
+- nichenetr.scaling_zscore
+- nichenetr.normalize_single_cell_ligand_activities

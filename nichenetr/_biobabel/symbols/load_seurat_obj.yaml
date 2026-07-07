@@ -1,0 +1,28 @@
+id: nichenetr.load_seurat_obj
+import_path: nichenetr.load_seurat_obj
+kind: function
+signature: load_seurat_obj() -> 'anndata.AnnData'
+purpose: Load the bundled example single-cell dataset (originally a Seurat object) as an AnnData.
+description: >-
+  Resolves seuratObj.h5ad via resolve_data_path (cached under
+  ~/.cache/nichenetr_py/, downloaded from Zenodo with SHA-256 verification
+  on a cache miss — a real network request in that case), then reads it with
+  anndata.read_h5ad. This is the example dataset used throughout the
+  seurat_steps/seurat_wrapper tutorials.
+parameters: []
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: An AnnData object (cells x genes) with cell type and condition columns in .obs.
+requires: []
+writes:
+- result.adata
+examples:
+- load_seurat_obj()
+failure_fixes:
+- when: No cached copy exists and there is no network access.
+  suggest:
+  - Raises an error from the underlying urllib download — pre-populate the
+    cache or mock nichenetr.datasets.resolve_data_path. Do not call this in
+    smoke tests/CI; construct a small synthetic AnnData instead.
+related:
+- nichenetr.alias_to_symbol_anndata
+- nichenetr.nichenet_seuratobj_aggregate

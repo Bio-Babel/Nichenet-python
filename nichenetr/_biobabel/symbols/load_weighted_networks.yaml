@@ -1,0 +1,32 @@
+id: nichenetr.load_weighted_networks
+import_path: nichenetr.load_weighted_networks
+kind: function
+signature: 'load_weighted_networks(organism: ''str'' = ''mouse'') -> ''dict[str, pd.DataFrame]'''
+purpose: Load the weighted ligand-receptor-signaling and gene-regulatory networks.
+description: >-
+  Resolves weighted_networks_{organism}_lr_sig.parquet and
+  weighted_networks_{organism}_gr.parquet via resolve_data_path (cached
+  under ~/.cache/nichenetr_py/, downloaded from Zenodo with SHA-256
+  verification on a cache miss — a real network request in that case). Do
+  not call in network-restricted contexts without a pre-populated cache or a
+  mock of resolve_data_path.
+parameters:
+- name: organism
+  type: str
+  required: false
+  default: mouse
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: 'A dict {"lr_sig": pd.DataFrame[from,to,weight], "gr": pd.DataFrame[from,to,weight]}.'
+requires: []
+writes:
+- result.weighted_networks
+examples:
+- load_weighted_networks(organism="human")
+failure_fixes:
+- when: No cached copy exists and there is no network access.
+  suggest:
+  - Raises an error from the underlying urllib download — pre-populate the
+    cache or mock nichenetr.datasets.resolve_data_path.
+related:
+- nichenetr.get_ligand_signaling_path
+- nichenetr.get_weighted_ligand_receptor_links

@@ -1,0 +1,48 @@
+id: nichenetr.get_weighted_ligand_target_links
+import_path: nichenetr.targets.get_weighted_ligand_target_links
+kind: function
+signature: 'get_weighted_ligand_target_links(ligand_oi: ''str'', geneset: ''list[str]
+  | set[str]'', ligand_target_matrix: ''NamedMatrix'', n: ''int'' = 250) -> ''pd.DataFrame'''
+purpose: Get the top-n regulatory-potential target genes for one ligand, intersected with a gene set of interest.
+description: >-
+  Looks up ligand_oi's column in ligand_target_matrix, takes the n
+  highest-weight target genes (rows), and intersects them with geneset.
+  Called once per top-ranked ligand (from predict_ligand_activities), with
+  results concatenated across ligands to build the full ligand-target link
+  table used for heatmap or circos visualization.
+parameters:
+- name: ligand_oi
+  type: str
+  required: true
+  default: null
+- name: geneset
+  type: list[str] | set[str]
+  required: true
+  default: null
+- name: ligand_target_matrix
+  type: NamedMatrix
+  required: true
+  default: null
+- name: n
+  type: int
+  required: false
+  default: 250
+mutates: 'execution_class=pure_function; ligand_target_matrix is only read;
+  returns_kind=new_object'
+returns: A new pd.DataFrame with columns [ligand, target, weight].
+requires:
+- result.ligand_target_matrix
+writes:
+- result.ligand_target_links
+examples:
+- 'get_weighted_ligand_target_links(ligand_oi="TGFB1", geneset=geneset_oi, ligand_target_matrix=ligand_target_matrix,
+  n=250)'
+failure_fixes:
+- when: ligand_oi is not a column of ligand_target_matrix, or no top targets overlap geneset.
+  suggest:
+  - No exception is raised; a single row with target/weight = NaN is returned
+    instead of an empty or erroring result.
+related:
+- nichenetr.predict_ligand_activities
+- nichenetr.prepare_ligand_target_visualization
+- nichenetr.get_ligand_target_links_oi

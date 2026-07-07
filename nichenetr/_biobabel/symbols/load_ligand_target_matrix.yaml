@@ -1,0 +1,35 @@
+id: nichenetr.load_ligand_target_matrix
+import_path: nichenetr.load_ligand_target_matrix
+kind: function
+signature: 'load_ligand_target_matrix(organism: ''str'' = ''mouse'') -> ''NamedMatrix'''
+purpose: Load the sparse ligand-target regulatory-potential prior model (rows=target genes, cols=ligands).
+description: >-
+  Resolves ligand_target_matrix_{organism}.npz plus its rownames/colnames
+  JSON sidecars via resolve_data_path: returns the file from
+  ~/.cache/nichenetr_py/ if already cached, otherwise downloads it from the
+  package's Zenodo record (verifying SHA-256) and caches it there. This
+  performs a real network request on a cache miss — do not call it in
+  network-restricted contexts (tests/examples) without a pre-populated
+  cache or a mock of resolve_data_path.
+parameters:
+- name: organism
+  type: str
+  required: false
+  default: mouse
+mutates: 'execution_class=pure_function; no in-place mutation; returns_kind=new_object'
+returns: A NamedMatrix wrapping the sparse prior model with target-gene rownames and ligand colnames.
+requires: []
+writes:
+- result.ligand_target_matrix
+examples:
+- load_ligand_target_matrix(organism="human")
+failure_fixes:
+- when: No cached copy exists and there is no network access.
+  suggest:
+  - Raises an error from the underlying urllib download — pre-populate
+    ~/.cache/nichenetr_py/ or mock nichenetr.datasets.resolve_data_path in
+    tests/examples instead of calling this function directly.
+related:
+- nichenetr.predict_ligand_activities
+- nichenetr.get_weighted_ligand_target_links
+- nichenetr.NamedMatrix

@@ -1,0 +1,47 @@
+id: nichenetr.prepare_ligand_target_visualization
+import_path: nichenetr.targets.prepare_ligand_target_visualization
+kind: function
+signature: 'prepare_ligand_target_visualization(ligand_target_df: ''pd.DataFrame'',
+  ligand_target_matrix: ''NamedMatrix'', cutoff: ''float'' = 0.25) -> ''np.ndarray'''
+purpose: Build a clustered, cutoff-filtered targets x ligands matrix ready for heatmap plotting.
+description: >-
+  Builds a dense targets x ligands sub-matrix of regulatory potentials
+  restricted to the (ligand, target) pairs in ligand_target_df, zeroes out
+  weights below the cutoff quantile, drops all-zero rows/columns, and
+  hierarchically cluster-orders both axes. Single-row/column inputs skip
+  clustering instead of erroring.
+parameters:
+- name: ligand_target_df
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Columns [ligand, target, weight] — typically the concatenated output of get_weighted_ligand_target_links across several ligands.
+- name: ligand_target_matrix
+  type: NamedMatrix
+  required: true
+  default: null
+- name: cutoff
+  type: float
+  required: false
+  default: 0.25
+mutates: 'execution_class=pure_function; inputs only read; returns_kind=new_object'
+returns: >-
+  A new ndarray subclass exposing .rownames (targets) and .colnames
+  (ligands), hierarchically ordered on both axes; shape (0, 0) if nothing
+  passes the cutoff.
+requires:
+- result.ligand_target_links
+- result.ligand_target_matrix
+writes:
+- result.ligand_target_matrix_vis
+examples:
+- prepare_ligand_target_visualization(ligand_target_df=active_ligand_target_links_df,
+  ligand_target_matrix=ligand_target_matrix, cutoff=0.33)
+failure_fixes:
+- when: No (ligand, target) pairs remain after the weight cutoff.
+  suggest:
+  - No exception is raised; returns an ndarray of shape (0, 0) instead of
+    erroring — lower the cutoff or check ligand_target_df for NaN weights.
+related:
+- nichenetr.get_weighted_ligand_target_links
+- nichenetr.make_heatmap_ggplot

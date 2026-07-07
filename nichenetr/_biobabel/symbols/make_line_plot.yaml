@@ -1,0 +1,71 @@
+id: nichenetr.make_line_plot
+import_path: nichenetr.visualization.make_line_plot
+kind: function
+signature: 'make_line_plot(ligand_activities: ''pd.DataFrame'', potential_ligands:
+  ''Optional[Sequence[str]]'' = None, ranking_range: ''tuple'' = (1, 20), agnostic_color:
+  ''str'' = "tomato", focused_color: ''str'' = "black", *, score_column: ''str'' =
+  "aupr_corrected", ligand_column: ''str'' = "test_ligand", ax=None, show: ''bool''
+  = False, figsize=None) -> ''matplotlib.figure.Figure'''
+purpose: Plot ranked ligand-activity scores, highlighting a subset of ligands (e.g. sender-focused vs sender-agnostic comparison).
+description: >-
+  Ranks ligand_activities by score_column (descending), slices to
+  ranking_range, and draws a ranked bar/lollipop plot. Ligands in
+  potential_ligands are drawn in focused_color, others in agnostic_color —
+  used to compare a sender-agnostic ligand_activities ranking against a
+  sender-focused potential_ligands subset.
+parameters:
+- name: ligand_activities
+  type: pd.DataFrame
+  required: true
+  default: null
+  description: Output of predict_ligand_activities; must contain ligand_column and score_column.
+- name: potential_ligands
+  type: Sequence[str]
+  required: false
+  default: null
+- name: ranking_range
+  type: tuple
+  required: false
+  default: (1, 20)
+- name: agnostic_color
+  type: str
+  required: false
+  default: tomato
+- name: focused_color
+  type: str
+  required: false
+  default: black
+- name: score_column
+  type: str
+  required: false
+  default: aupr_corrected
+- name: ligand_column
+  type: str
+  required: false
+  default: test_ligand
+- name: ax
+  type: matplotlib.axes.Axes
+  required: false
+  default: null
+- name: show
+  type: bool
+  required: false
+  default: false
+- name: figsize
+  type: tuple
+  required: false
+  default: null
+mutates: 'execution_class=pure_function; ligand_activities is only read; returns_kind=new_object'
+returns: A matplotlib.figure.Figure containing the ranked ligand-activity plot.
+requires:
+- result.ligand_activities
+writes: []
+examples:
+- make_line_plot(ligand_activities=ligand_activities_agnostic, potential_ligands=potential_ligands_focused)
+failure_fixes:
+- when: ligand_column or score_column is not a column of ligand_activities.
+  suggest:
+  - Raises ValueError mentioning "not found" — pass the actual column names
+    (predict_ligand_activities produces test_ligand/aupr_corrected by default).
+related:
+- nichenetr.predict_ligand_activities

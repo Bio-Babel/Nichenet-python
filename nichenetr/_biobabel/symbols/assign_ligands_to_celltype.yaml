@@ -1,0 +1,73 @@
+id: nichenetr.assign_ligands_to_celltype
+import_path: nichenetr.symbols.assign_ligands_to_celltype
+kind: function
+signature: 'assign_ligands_to_celltype(adata: ''ad.AnnData'', celltype_col: ''str'',
+  sender_celltypes: ''Sequence[str]'', ligands_oi: ''Sequence[str]'', celltype_specificity:
+  ''bool'' = True, layer: ''Optional[str]'' = None, func_agg: ''Callable[[np.ndarray],
+  float]'' = np.mean, func_assign: ''Optional[Callable[[np.ndarray], float]]'' =
+  None) -> ''pd.DataFrame'''
+purpose: Assign each ligand of interest to the sender cell type where it is most specifically expressed.
+description: >-
+  For each ligand in ligands_oi, aggregates its expression (via func_agg,
+  default mean) per sender cell type (subset of adata.obs[celltype_col] in
+  sender_celltypes), then applies func_assign (default: mean + std) as a
+  per-ligand threshold. A ligand is labeled with the single cell type whose
+  aggregated expression exceeds the threshold; ligands exceeding the
+  threshold in zero or more than one cell type are labeled "General". If
+  celltype_specificity is False, every ligand is labeled "General" without
+  reading expression at all. Used to color ligand nodes by originating
+  sender cell type in circos plots (e.g. after nichenet_seuratobj_aggregate).
+parameters:
+- name: adata
+  type: ad.AnnData
+  required: true
+  default: null
+- name: celltype_col
+  type: str
+  required: true
+  default: null
+- name: sender_celltypes
+  type: Sequence[str]
+  required: true
+  default: null
+- name: ligands_oi
+  type: Sequence[str]
+  required: true
+  default: null
+  description: Ligand gene names; must all be present in adata.var_names.
+- name: celltype_specificity
+  type: bool
+  required: false
+  default: true
+- name: layer
+  type: str
+  required: false
+  default: null
+- name: func_agg
+  type: Callable[[np.ndarray], float]
+  required: false
+  default: np.mean
+- name: func_assign
+  type: Callable[[np.ndarray], float]
+  required: false
+  default: null
+  description: Per-ligand threshold function; defaults to lambda x mean(x) + std(x).
+mutates: 'execution_class=pure_function; adata is only read/subset, never mutated
+  in place; returns_kind=new_object'
+returns: A new pd.DataFrame with columns [ligand_type, ligand].
+requires: []
+writes:
+- result.ligand_type_indication_df
+examples:
+- 'assign_ligands_to_celltype(adata, celltype_col="celltype", sender_celltypes=["CAF",
+  "Endothelial"], ligands_oi=best_upstream_ligands)'
+failure_fixes:
+- when: A ligand in ligands_oi is not present in adata.var_names.
+  suggest:
+  - Raises ValueError listing "The following ligands are not in adata.var_names" —
+    filter ligands_oi to genes actually present in the AnnData (e.g. after
+    alias_to_symbol_anndata canonicalization).
+related:
+- nichenetr.get_ligand_target_links_oi
+- nichenetr.prepare_circos_visualization
+- nichenetr.get_expressed_genes

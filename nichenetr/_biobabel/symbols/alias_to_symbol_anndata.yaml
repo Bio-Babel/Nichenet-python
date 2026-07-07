@@ -1,0 +1,42 @@
+id: nichenetr.alias_to_symbol_anndata
+import_path: nichenetr.symbols.alias_to_symbol_anndata
+kind: function
+signature: 'alias_to_symbol_anndata(adata: ''ad.AnnData'', organism: ''str'' = ''mouse'')
+  -> ''ad.AnnData'''
+purpose: Convert adata.var_names from gene aliases to official gene symbols.
+description: >-
+  Python equivalent of R nichenetr's alias_to_symbol_seurat. Operates on a
+  copy of adata (the input is never mutated): maps each name in adata.var_names
+  through convert_alias_to_symbols, reverts any renamed gene that would
+  collide with another gene's new name back to its original alias, sets
+  var_names to the resulting names, and calls adata.var_names_make_unique()
+  to disambiguate any remaining duplicates. Should be run once, immediately
+  after loading an AnnData, before any downstream expressed-gene or
+  differential-expression computation, since every other nichenetr symbol
+  matches genes by exact symbol against the ligand-target/LR/signaling
+  networks.
+parameters:
+- name: adata
+  type: ad.AnnData
+  required: true
+  default: null
+  description: Cells x genes AnnData whose var_names are gene aliases/symbols to canonicalize.
+- name: organism
+  type: str
+  required: false
+  default: mouse
+  description: Organism used to look up the alias-to-symbol table (see load_geneinfo_alias).
+mutates: 'execution_class=pure_function; adata.copy() is taken internally and
+  var_names is set on the copy; the caller''s adata object is never mutated;
+  returns_kind=new_object'
+returns: A new AnnData (copy of the input) with var_names replaced by official gene symbols.
+requires: []
+writes:
+- result.adata
+examples:
+- 'adata = alias_to_symbol_anndata(adata, organism="human")'
+failure_fixes: []
+related:
+- nichenetr.convert_alias_to_symbols
+- nichenetr.get_expressed_genes
+- nichenetr.load_geneinfo_alias

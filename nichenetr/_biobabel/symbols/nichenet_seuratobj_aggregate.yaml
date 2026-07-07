@@ -1,0 +1,154 @@
+id: nichenetr.nichenet_seuratobj_aggregate
+import_path: nichenetr.wrappers.nichenet_seuratobj_aggregate
+kind: function
+signature: 'nichenet_seuratobj_aggregate(receiver: ''Union[str, Sequence[str]]'',
+  adata: ''ad.AnnData'', condition_col: ''str'', condition_oi: ''str'', condition_ref:
+  ''str'', sender: ''Union[str, Sequence[str]]'' = "all", celltype_col: ''Optional[str]''
+  = None, ligand_target_matrix: ''Optional[np.ndarray]'' = None, lr_network: ''Optional[pd.DataFrame]''
+  = None, weighted_networks: ''Optional[Dict[str, pd.DataFrame]]'' = None, expression_pct:
+  ''float'' = 0.10, lfc_cutoff: ''float'' = 0.25, top_n_ligands: ''int'' = 30, top_n_targets:
+  ''int'' = 200, cutoff_visualization: ''float'' = 0.33, geneset: ''str'' = "DE",
+  filter_top_ligands: ''bool'' = True, assay_oi: ''Optional[str]'' = None, verbose:
+  ''bool'' = True) -> ''Dict[str, Any]'''
+purpose: Run the full NicheNet pipeline in one call — DE, ligand activity, target/receptor inference, and figures.
+description: >-
+  One-call, sender-agnostic-or-focused equivalent of the manual
+  step-by-step recipe (alias_to_symbol_anndata -> get_expressed_genes ->
+  DE -> predict_ligand_activities -> get_weighted_ligand_target_links ->
+  prepare_ligand_target_visualization -> get_weighted_ligand_receptor_links
+  -> heatmaps). Explains DE genes in receiver cell(s) between condition_oi
+  and condition_ref by ligands expressed in sender cell(s) (or "all" cell
+  types if sender="all"). Auto-loads ligand_target_matrix/lr_network/weighted_networks
+  via load_ligand_target_matrix/load_lr_network/load_weighted_networks when
+  not supplied. Never mutates the caller's adata, lr_network,
+  ligand_target_matrix, or weighted_networks — everything is copied
+  internally before use. Accepts ligand_target_matrix as either a NamedMatrix
+  or a plain pd.DataFrame.
+parameters:
+- name: receiver
+  type: Union[str, Sequence[str]]
+  required: true
+  default: null
+  description: Cell type(s) in adata.obs[celltype_col] whose DE genes are explained.
+- name: adata
+  type: ad.AnnData
+  required: true
+  default: null
+- name: condition_col
+  type: str
+  required: true
+  default: null
+- name: condition_oi
+  type: str
+  required: true
+  default: null
+- name: condition_ref
+  type: str
+  required: true
+  default: null
+- name: sender
+  type: Union[str, Sequence[str]]
+  required: false
+  default: all
+  description: Cell type(s) to consider as ligand sources, or "all"/"undefined" for sender-agnostic mode.
+- name: celltype_col
+  type: str
+  required: false
+  default: null
+  description: Column in adata.obs holding cell type labels; required (a ValueError is raised if omitted).
+- name: ligand_target_matrix
+  type: np.ndarray
+  required: false
+  default: null
+  description: A NamedMatrix or pd.DataFrame prior model; auto-loaded via load_ligand_target_matrix if omitted.
+- name: lr_network
+  type: pd.DataFrame
+  required: false
+  default: null
+  description: Auto-loaded via load_lr_network if omitted.
+- name: weighted_networks
+  type: Dict[str, pd.DataFrame]
+  required: false
+  default: null
+  description: Auto-loaded via load_weighted_networks if omitted.
+- name: expression_pct
+  type: float
+  required: false
+  default: 0.10
+- name: lfc_cutoff
+  type: float
+  required: false
+  default: 0.25
+- name: top_n_ligands
+  type: int
+  required: false
+  default: 30
+- name: top_n_targets
+  type: int
+  required: false
+  default: 200
+- name: cutoff_visualization
+  type: float
+  required: false
+  default: 0.33
+- name: geneset
+  type: str
+  required: false
+  default: DE
+  description: One of "DE", "up", "down".
+- name: filter_top_ligands
+  type: bool
+  required: false
+  default: true
+- name: assay_oi
+  type: str
+  required: false
+  default: null
+- name: verbose
+  type: bool
+  required: false
+  default: true
+mutates: 'execution_class=pure_function; adata/lr_network/ligand_target_matrix/weighted_networks
+  are all copied internally before any subsetting or renaming; the caller''s
+  objects are never mutated; returns_kind=new_object'
+returns: >-
+  A dict with keys including ligand_activities, top_ligands, top_targets,
+  top_receptors, ligand_target_matrix (visualization matrix), ligand_target_df,
+  ligand_receptor_matrix, ligand_receptor_df, ligand_receptor_heatmap,
+  ligand_target_heatmap, ligand_expression_dotplot,
+  ligand_differential_expression_heatmap, ligand_activity_target_heatmap
+  (matplotlib Figures or None), geneset_oi, background_expressed_genes.
+requires: []
+writes:
+- result.nichenet_ligand_activities
+- result.nichenet_top_ligands
+- result.nichenet_ligand_target_df
+- result.nichenet_ligand_receptor_df
+- result.nichenet_geneset_oi
+- result.nichenet_background_expressed_genes
+examples:
+- 'nichenet_seuratobj_aggregate(receiver="Malignant", adata=adata, condition_col="tumor",
+  condition_oi="High", condition_ref="Low", sender=["CAF", "Endothelial"], celltype_col="celltype")'
+failure_fixes:
+- when: geneset is not "DE"/"up"/"down".
+  suggest:
+  - Raises ValueError "geneset must be 'DE', 'up', or 'down'."
+- when: celltype_col is not provided.
+  suggest:
+  - Raises ValueError "celltype_col must be provided..." — pass the actual
+    obs column name holding cell type labels.
+- when: No genes are differentially expressed between condition_oi and condition_ref in the receiver.
+  suggest:
+  - Raises ValueError "No genes were differentially expressed." — relax
+    lfc_cutoff/expression_pct or check the condition labels.
+- when: No ligands are expressed in the sender cell(s), or no receptors are expressed in the receiver.
+  suggest:
+  - Raises ValueError ("No ligands expressed in sender cells." / "No receptors
+    expressed in receiver cells." / "No potentially active ligands.") — lower
+    expression_pct or widen the sender/receiver cell type selection.
+related:
+- nichenetr.nichenet_seuratobj_cluster_de
+- nichenetr.predict_ligand_activities
+- nichenetr.get_weighted_ligand_target_links
+- nichenetr.assign_ligands_to_celltype
+- nichenetr.generate_info_tables

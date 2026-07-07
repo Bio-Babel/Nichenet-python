@@ -1,0 +1,83 @@
+id: nichenetr.make_heatmap_ggplot
+import_path: nichenetr.visualization.make_heatmap_ggplot
+kind: function
+signature: 'make_heatmap_ggplot(matrix_oi, y_name: ''str'' = "y", x_name: ''str''
+  = "x", y_axis: ''bool'' = True, x_axis: ''bool'' = True, x_axis_position: ''str''
+  = "top", legend_position: ''str'' = "top", color: ''str'' = "blue", legend_title:
+  ''str'' = "score", *, ax=None, show: ''bool'' = False, figsize=None) -> ''matplotlib.figure.Figure'''
+purpose: Draw a single-color (white-to-color) heatmap, the Python/seaborn equivalent of R's make_heatmap_ggplot.
+description: >-
+  Converts matrix_oi (a DataFrame, ndarray, or any object exposing
+  .rownames/.colnames such as the output of prepare_ligand_target_visualization
+  or prepare_ligand_receptor_visualization) to a DataFrame and renders it via
+  seaborn.heatmap. Draws on ax if given, otherwise creates a new figure.
+parameters:
+- name: matrix_oi
+  type: DataFrame | ndarray | NamedMatrix-like
+  required: true
+  default: null
+- name: y_name
+  type: str
+  required: false
+  default: y
+- name: x_name
+  type: str
+  required: false
+  default: x
+- name: y_axis
+  type: bool
+  required: false
+  default: true
+- name: x_axis
+  type: bool
+  required: false
+  default: true
+- name: x_axis_position
+  type: str
+  required: false
+  default: top
+  description: Must be "top" or "bottom".
+- name: legend_position
+  type: str
+  required: false
+  default: top
+  description: One of top/bottom/left/right/none.
+- name: color
+  type: str
+  required: false
+  default: blue
+- name: legend_title
+  type: str
+  required: false
+  default: score
+- name: ax
+  type: matplotlib.axes.Axes
+  required: false
+  default: null
+- name: show
+  type: bool
+  required: false
+  default: false
+- name: figsize
+  type: tuple
+  required: false
+  default: null
+mutates: 'execution_class=pure_function; matrix_oi is only read; if ax is given
+  it is drawn on but not otherwise mutated as data; returns_kind=new_object'
+returns: A matplotlib.figure.Figure containing the rendered heatmap.
+requires: []
+writes: []
+examples:
+- 'make_heatmap_ggplot(ligand_target_matrix_vis, y_name="Targets", x_name="Ligands",
+  color="purple", legend_title="Regulatory potential")'
+failure_fixes:
+- when: x_axis_position is not "top" or "bottom".
+  suggest:
+  - Raises ValueError naming x_axis_position — use one of the two allowed values.
+- when: legend_position is not one of top/bottom/left/right/none.
+  suggest:
+  - Raises ValueError naming legend_position.
+related:
+- nichenetr.prepare_ligand_target_visualization
+- nichenetr.prepare_ligand_receptor_visualization
+- nichenetr.make_threecolor_heatmap_ggplot

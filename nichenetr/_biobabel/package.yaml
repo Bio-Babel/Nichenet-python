@@ -13,49 +13,7 @@ r_package:
   repo: https://github.com/saeyslab/nichenetr
   version_or_commit: 2d5c1ab
   fidelity: partial
-capabilities:
-- ligand-activity-prediction
-- ligand-target-link-inference
-- ligand-receptor-link-inference
-- ligand-receptor-pair-prioritization
-- signaling-path-tracing
-- single-cell-ligand-activity-scoring
-- nichenet-visualization
-domain_tags:
-- single-cell-transcriptomics
-- cell-cell-communication
-- ligand-receptor-signaling
-- intercellular-signaling
-- gene-regulatory-networks
-task_tags:
-- differential-expression
-- ligand-prioritization
-- pathway-tracing
-- circos-visualization
-- model-evaluation
 foundation: []
-triggers:
-- Explaining which ligands from sender cell type(s) could induce an observed
-  differentially expressed gene set in receiver cell(s) between two conditions
-  (a "NicheNet analysis").
-- Ranking candidate ligands by how well their known downstream target genes
-  overlap a gene set of interest.
-- Tracing an intermediate signaling/gene-regulatory path connecting a specific
-  ligand to a specific target gene.
-- Prioritizing sender-receiver ligand-receptor pairs using combined expression,
-  differential-expression, and ligand-activity evidence.
-- Visualizing ligand-target or ligand-receptor links as heatmaps, circos/chord
-  diagrams, or mushroom plots.
-not_when:
-- Only computing standard per-cell-type differential expression with no
-  ligand-target/ligand-receptor prior-knowledge step is needed — use scanpy's
-  rank_genes_groups directly instead.
-- The goal is purely spatial co-localization of ligand-receptor pairs (e.g.
-  distance-based spatial transcriptomics analysis) rather than prior-knowledge-based
-  target-gene induction — nichenetr has no spatial component.
-- A ligand-receptor interaction score based only on co-expression (e.g. CellPhoneDB-style
-  mean-expression scoring) is sufficient, with no downstream target-gene
-  evidence required.
 templates:
 - id: nichenetr.seurat_ligand_activity_template
   path: templates/seurat_ligand_activity_template.py
